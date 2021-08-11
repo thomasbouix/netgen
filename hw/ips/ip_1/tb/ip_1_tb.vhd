@@ -11,15 +11,7 @@ architecture behavior of ip_1_tb is
 
 begin
 
-    ip_1 : entity work.ip_1 port map (
-    );     
+    ip_1 : entity work.ip_1; 
     
-    clock : process is begin
-        i_clk <= '0';
-        wait for CLOCK_PERIOD_2;
-        i_clk <= '1';
-        wait for CLOCK_PERIOD_2;
-    end process;
-
 end architecture;
 

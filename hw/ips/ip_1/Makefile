@@ -1,6 +1,7 @@
 # GHDL-GCC + VIVADO MAKEFILE
 
 IP_NAME=ip_1
+STOP_TIME=50us
 
 # Analyse + elaboration des sources dans $(IP_NAME)_work
 # Dans le code HDL, work fait donc reference a $(IP_NAME)_work dans les sources
@@ -13,7 +14,7 @@ ghdl :
 
 # Run and display of the simulation
 sim : 
-	./$(IP_NAME)_tb --stop-time=10us --vcd=$(IP_NAME).vcd
+	./$(IP_NAME)_tb --stop-time=$(STOP_TIME) --vcd=$(IP_NAME).vcd
 	gtkwave $(IP_NAME).vcd
 
 clean_ghdl :
