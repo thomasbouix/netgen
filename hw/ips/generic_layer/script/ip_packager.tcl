@@ -4,7 +4,7 @@
 # A appeler depuis le dossier de l'ip
 #-----------------------------------------------------------
 
-set ip_name "ip_1" 
+set ip_name "generic_layer" 
 
 create_project $ip_name . -part xc7z020clg484-1
 set_property board_part em.avnet.com:zed:part0:1.4 [current_project]

@@ -1,6 +1,6 @@
 # GHDL-GCC + VIVADO MAKEFILE
 
-IP_NAME=ip_1
+IP_NAME=generic_layer
 STOP_TIME=50us
 
 # Analyse + elaboration des sources dans $(IP_NAME)_work
