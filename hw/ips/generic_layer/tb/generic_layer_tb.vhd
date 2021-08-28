@@ -1,17 +1,64 @@
 library ieee;
 use ieee.std_logic_1164.all;
 
-entity ip_1_tb is 
+library work;
+use work.netgen_parameters.all;
+
+entity generic_layer_tb is 
+
+    generic (
+        G_NB_INPUTS         : integer := 2;
+        G_NB_WEIGHTS        : integer := 4
+    );
+
 end entity;
 
-architecture behavior of ip_1_tb is 
+architecture behavior of generic_layer_tb is 
 
     constant CLOCK_PERIOD_2 : time := 5 ns;
     constant CLOCK_PERIOD   : time := 2 * CLOCK_PERIOD_2;
 
+    signal clk              : std_logic;
+    signal rstn             : std_logic;
+    signal inputs           : std_logic_vector(G_NB_INPUTS *DATA_WIDTH-1 downto 0)  := (others => '0');
+    signal outputs          : std_logic_vector(G_NB_WEIGHTS*DATA_WIDTH-1 downto 0)  := (others => '0');
+
 begin
 
-    ip_1 : entity work.ip_1; 
+    generic_layer : entity work.generic_layer 
+
+        generic map ( 
+                      G_NB_INPUTS   => G_NB_INPUTS,
+                      G_NB_WEIGHTS  => G_NB_WEIGHTS 
+                    )
+
+        port map    ( 
+                      clk           => clk,
+                      rstn          => rstn,
+                      inputs        => inputs,
+                      outputs       => outputs
+                    );
+
+        inputs      <= (0 => '1', 8 => '1', 9 => '1', others => '0');
+
+        p_reset : process begin
+
+            rstn    <= '0';
+            wait for 5 * CLOCK_PERIOD;
+            rstn    <= '1';
+            wait;
+
+        end process;
+
+   
+        p_clock : process begin
+
+            clk     <= '0';
+            wait for CLOCK_PERIOD_2;
+            clk     <= '1';
+            wait for CLOCK_PERIOD_2;
+
+        end process;     
     
 end architecture;
 
