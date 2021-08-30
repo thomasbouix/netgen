@@ -54,7 +54,7 @@ begin
                 done := '1';
 
                 adding_inputs : for i in 0 to G_NB_INPUTS-1 loop
-                    res := res + to_integer( unsigned( inputs(((i*DATA_WIDTH)+DATA_WIDTH-1) downto i*DATA_WIDTH))); 
+                    res := res + to_integer( signed( inputs(((i*DATA_WIDTH)+DATA_WIDTH-1) downto i*DATA_WIDTH))); 
                 end loop;
 
                 inputs_sum <= res;
@@ -73,13 +73,12 @@ begin
 
         elsif rising_edge(clk) then
 
-
-            -- outputs[i] = ( weights[i] * inputs_sum ) + ( NB_WEIGHTS * offsets[i] )
+            -- outputs[i] = ( weights[i] * inputs_sum ) + ( NB_INPUTS * offsets[i] )
             processing_outputs : for i in 0 to G_NB_WEIGHTS-1 loop
 
-               outputs(i*DATA_WIDTH + DATA_WIDTH - 1 downto i*DATA_WIDTH) <= std_logic_vector(to_unsigned(
-                                                                                        to_integer(unsigned(weights(i))) * inputs_sum + 
-                                                                                        (G_NB_WEIGHTS * to_integer(unsigned(offsets(i))))
+               outputs(i*DATA_WIDTH + DATA_WIDTH - 1 downto i*DATA_WIDTH) <= std_logic_vector(to_signed(
+                                                                                        to_integer(weights(i)) * inputs_sum + 
+                                                                                        (G_NB_INPUTS * to_integer(signed(offsets(i))))
                                                                              , DATA_WIDTH));
             end loop;
 

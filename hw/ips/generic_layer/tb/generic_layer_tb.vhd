@@ -8,7 +8,7 @@ entity generic_layer_tb is
 
     generic (
         G_NB_INPUTS         : integer := 2;
-        G_NB_WEIGHTS        : integer := 4
+        G_NB_WEIGHTS        : integer := 2
     );
 
 end entity;
@@ -39,7 +39,9 @@ begin
                       outputs       => outputs
                     );
 
-        inputs      <= (0 => '1', 8 => '1', 9 => '1', others => '0');
+        inputs      <= (1 => '1',               -- inputs(0) = 2 
+                        15 => '1',              -- inputs(1) = -128
+                        others => '0');
 
         p_reset : process begin
 
