@@ -2,7 +2,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 
 library work;
-use work.netgen_parameters.all;
+use work.parameters.all;
 
 entity generic_layer_tb is 
 
