@@ -4,10 +4,12 @@
 # A appeler depuis le dossier de l'ip
 #-----------------------------------------------------------
 
+source ../parameters/parameters.tcl
+
 set ip_name "generic_layer" 
 
-create_project $ip_name . -part xc7z020clg484-1
-set_property board_part em.avnet.com:zed:part0:1.4 [current_project]
+create_project $ip_name . -part $part
+set_property board_part $board [current_project]
 
 set_property target_language VHDL [current_project]
 add_files -norecurse src/$ip_name.vhd
