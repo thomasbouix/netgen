@@ -1,19 +1,20 @@
 # GHDL-GCC + VIVADO MAKEFILE
 
-IP_NAME=ip_1
-STOP_TIME=50us
+IP_NAME=generic_layer
+STOP_TIME=150ns
 
 # Analyse + elaboration des sources dans $(IP_NAME)_work
 # Dans le code HDL, work fait donc reference a $(IP_NAME)_work dans les sources
 
 # Elaboration of the simulation executable
 ghdl : 
+	ghdl -a --work=$(IP_NAME)_work ../parameters/parameters.vhd
 	ghdl -a --work=$(IP_NAME)_work src/$(IP_NAME).vhd
 	ghdl -a --work=$(IP_NAME)_work tb/$(IP_NAME)_tb.vhd
 	ghdl -e --work=$(IP_NAME)_work $(IP_NAME)_tb
 
 # Run and display of the simulation
-sim : 
+sim : ghdl
 	./$(IP_NAME)_tb --stop-time=$(STOP_TIME) --vcd=$(IP_NAME).vcd
 	gtkwave $(IP_NAME).vcd
 
