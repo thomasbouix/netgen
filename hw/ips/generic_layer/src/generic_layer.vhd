@@ -11,15 +11,15 @@ use work.parameters.all;
 
 entity generic_layer is 
     generic (
-        G_NB_INPUTS     : integer   := 2; 
-        G_NB_WEIGHTS    : integer   := 4
+        g_NB_INPUTS     : integer   := 2; 
+        g_NB_WEIGHTS    : integer   := 4
     );
 
     port(
         clk             : in  std_logic;
         rstn            : in  std_logic;
-        inputs          : in  std_logic_vector( (G_NB_INPUTS  * DATA_WIDTH) - 1 downto 0);
-        outputs         : out std_logic_vector( (G_NB_WEIGHTS * DATA_WIDTH) - 1 downto 0)   := (others => '0')
+        inputs          : in  t_data_array(0 to g_NB_INPUTS  - 1); 
+        outputs         : out t_data_array(0 to g_NB_WEIGHTS - 1)   := (others => (others => '0'))
     );
 
 end entity;
@@ -29,12 +29,11 @@ end entity;
 architecture rtl of generic_layer is
 
     type T_SM           is (ADDING_INPUTS, COMPUTING_OUTPUTS);
-    type t_parameters   is array (0 to G_NB_WEIGHTS-1) of T_DATA;
 
-    signal r_sm         : T_SM              := ADDING_INPUTS;
-    signal weights      : t_parameters      := (others => (0 => '1', others => '0'));   -- weights[i] = 1
-    signal offsets      : t_parameters      := (others => (0 => '1', others => '0'));   -- offsets[i] = 1
-    signal inputs_sum   : integer           := 0; 
+    signal r_sm         : T_SM                                  := ADDING_INPUTS;
+    signal weights      : t_data_array(0 to g_NB_WEIGHTS - 1)   := (others => (0 => '1', others => '0'));   -- weights[i] = 1
+    signal offsets      : t_data_array(0 to g_NB_WEIGHTS - 1)   := (others => (0 => '1', others => '0'));   -- offsets[i] = 1
+    signal inputs_sum   : integer                               := 0;                                       -- used to compute the sum of all inputs
 
 begin
 
@@ -53,7 +52,7 @@ begin
 
                 weights <= (others => (0 => '1', others => '0') );
                 offsets <= (others => (0 => '1', others => '0') );
-                outputs <= (others => '0');
+                outputs <= (others => (others => '0'));
 
                 r_sm    <= ADDING_INPUTS;
 
@@ -65,8 +64,8 @@ begin
 
                         res     := 0;
                         -- res = i(0) + i(1) + ... + i(n-1)
-                        loop_adding_inputs : for i in 0 to G_NB_INPUTS-1 loop
-                            res := res + to_integer( signed( inputs(((i*DATA_WIDTH)+DATA_WIDTH-1) downto i*DATA_WIDTH))); 
+                        loop_adding_inputs : for i in 0 to g_NB_INPUTS-1 loop
+                            res := res + to_integer( inputs(i) );
                         end loop;
 
                         inputs_sum  <= res;
@@ -75,12 +74,11 @@ begin
                     when COMPUTING_OUTPUTS =>       
                         
                         -- outputs[i] = ( weights[i] * inputs_sum ) + ( NB_INPUTS * offsets[i] )
-                        loop_computing_outputs : for i in 0 to G_NB_WEIGHTS-1 loop
+                        loop_computing_outputs : for i in 0 to g_NB_WEIGHTS-1 loop
 
-                            outputs(i*DATA_WIDTH + DATA_WIDTH - 1 downto i*DATA_WIDTH) <= 
-                                std_logic_vector(to_signed(
-                                    to_integer(weights(i)) * inputs_sum + (G_NB_INPUTS * to_integer(offsets(i)))
-                                , DATA_WIDTH));
+                            outputs(i)  <= to_signed(
+                                    to_integer(weights(i)) * inputs_sum + (g_NB_INPUTS * to_integer(offsets(i)))
+                            , p_DATA_WIDTH);
 
                         end loop;
 

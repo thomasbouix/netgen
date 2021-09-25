@@ -6,8 +6,13 @@ use ieee.numeric_std.all;
 
 package parameters is
 
-    constant DATA_WIDTH : integer := 8;
-    subtype t_data is signed(DATA_WIDTH-1 downto 0);
+    constant p_DATA_WIDTH : integer := 8;
+
+    -- atomic data element
+    subtype t_data is signed(p_DATA_WIDTH-1 downto 0);
+
+    -- array of data
+    type t_data_array is array (integer range <>) of T_DATA;
 
 end package;
  

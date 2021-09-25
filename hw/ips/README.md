@@ -1,2 +1,2 @@
-# VHDL
-Dossier contenant des IPs HDL et HLS
+# IPs
+Folder containing HDL and HLS IPs.
