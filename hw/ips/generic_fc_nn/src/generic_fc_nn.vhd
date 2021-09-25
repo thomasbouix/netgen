@@ -12,17 +12,15 @@ use work.parameters.all;
 entity generic_fc_nn is 
 
     generic (
-        g_NETWORK_INPUTS    : integer := 2;     -- number of inputs of the first layer
-        g_NETWORK_OUTPUTS   : integer := 4;     -- number of outputs of the last layer
-        g_NETWORK_HEIGHT    : integer := 3;     -- number of inputs / outputs of middle layers
-        g_NETWORK_LAYERS    : integer := 5      -- number of layers inside the network
+        g_NETWORK_INPUTS        : integer := 2;     -- number of inputs of the first layer
+        g_NETWORK_OUTPUTS       : integer := 4;     -- number of outputs of the last layer
+        g_NETWORK_HEIGHT        : integer := 3;     -- number of inputs / outputs of middle layers
+        g_NETWORK_LAYERS        : integer := 5      -- number of layers inside the network
     );
 
     port(
-        clk                 : in  std_logic;
-        rstn                : in  std_logic;
-        network_inputs      : in  t_data_array(0 to g_NETWORK_INPUTS  - 1)  := (others => (others => '0'));
-        network_outputs     : out t_data_array(0 to g_NETWORK_OUTPUTS - 1)  := (others => (others => '0'))
+        clk                     : in  std_logic;
+        rstn                    : in  std_logic
     );
 
 end entity;
@@ -46,7 +44,9 @@ architecture rtl of generic_fc_nn is
 
     end component;
 
-    signal r_layer_connections  : t_data_array(0 to g_NETWORK_LAYERS * g_NETWORK_HEIGHT - 1)     := (others => (others => '0'));
+    signal r_layer_connections  : t_data_array(0 to g_NETWORK_LAYERS * g_NETWORK_HEIGHT - 1)    := (others => (others => '0'));
+    signal network_inputs       : t_data_array(0 to g_NETWORK_INPUTS  - 1)                      := (others => (others => '0'));
+    signal network_outputs      : t_data_array(0 to g_NETWORK_OUTPUTS - 1)                      := (others => (others => '0'));
 
 
 begin

@@ -23,9 +23,6 @@ architecture behavior of generic_fc_nn_tb is
     signal clk              : std_logic;
     signal rstn             : std_logic;
 
-    signal network_inputs   : t_data_array(0 to g_NETWORK_INPUTS  - 1)  := (others => (others => '0'));
-    signal network_outputs  : t_data_array(0 to g_NETWORK_OUTPUTS - 1)  := (others => (others => '0'));
-
 begin
 
     generic_fc_nn : entity work.generic_fc_nn 
@@ -39,10 +36,8 @@ begin
 
         port map    ( 
             clk                 => clk,
-            rstn                => rstn,
-            network_inputs      => network_inputs,
-            network_outputs     => network_outputs
-                    );
+            rstn                => rstn
+        );
 
         p_reset : process begin
 
