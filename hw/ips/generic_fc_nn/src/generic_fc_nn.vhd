@@ -14,7 +14,7 @@ entity generic_fc_nn is
     generic (
         g_NETWORK_INPUTS    : integer := 2;     -- number of inputs of the first layer
         g_NETWORK_OUTPUTS   : integer := 4;     -- number of outputs of the last layer
-        g_NETWORK_WIDTH     : integer := 3;     -- number of inputs / outputs of middle layers
+        g_NETWORK_HEIGHT    : integer := 3;     -- number of inputs / outputs of middle layers
         g_NETWORK_LAYERS    : integer := 5      -- number of layers inside the network
     );
 
@@ -46,7 +46,7 @@ architecture rtl of generic_fc_nn is
 
     end component;
 
-    signal r_layer_connections  : t_data_array(0 to g_NETWORK_LAYERS * g_NETWORK_WIDTH - 1)     := (others => (others => '0'));
+    signal r_layer_connections  : t_data_array(0 to g_NETWORK_LAYERS * g_NETWORK_HEIGHT - 1)     := (others => (others => '0'));
 
 
 begin
@@ -58,32 +58,32 @@ begin
             FL : generic_layer
                 generic map (
                     g_NB_INPUTS     => g_NETWORK_INPUTS,
-                    g_NB_WEIGHTS    => 2
+                    g_NB_WEIGHTS    => g_NETWORK_HEIGHT
                 )
 
                 port map (
                    clk              => clk,  
                    rstn             => rstn,
                    inputs           => network_inputs,
-                   outputs          => r_layer_connections(0 to g_NETWORK_WIDTH - 1)
+                   outputs          => r_layer_connections(0 to g_NETWORK_HEIGHT - 1)
                 );
         end generate first_layer;
 
 
-        middle_layers : if i < g_NETWORK_LAYERS - 1 generate
+        middle_layers : if i > 0 and i < g_NETWORK_LAYERS - 1 generate
 
             ML : generic_layer 
                 
                 generic map (
-                    g_NB_INPUTS     => 2,
-                    g_NB_WEIGHTS    => 2
+                    g_NB_INPUTS     => g_NETWORK_HEIGHT,
+                    g_NB_WEIGHTS    => g_NETWORK_HEIGHT
                 )
 
                 port map (
                    clk              => clk,  
                    rstn             => rstn,
-                   inputs           => r_layer_connections( g_NETWORK_WIDTH*(i-1) to g_NETWORK_WIDTH*(i)   - 1),
-                   outputs          => r_layer_connections( g_NETWORK_WIDTH*(i)   to g_NETWORK_WIDTH*(i+1) - 1) 
+                   inputs           => r_layer_connections( g_NETWORK_HEIGHT*(i-1) to g_NETWORK_HEIGHT*(i)   - 1),
+                   outputs          => r_layer_connections( g_NETWORK_HEIGHT*(i)   to g_NETWORK_HEIGHT*(i+1) - 1) 
                 );
         end generate middle_layers;
 
@@ -91,14 +91,14 @@ begin
 
             LL : generic_layer
                 generic map (
-                    g_NB_INPUTS     => 2,
-                    g_NB_WEIGHTS    => 2
+                    g_NB_INPUTS     => g_NETWORK_HEIGHT,
+                    g_NB_WEIGHTS    => g_NETWORK_OUTPUTS
                 )
 
                 port map (
                    clk              => clk,  
                    rstn             => rstn,
-                   inputs           => r_layer_connections( g_NETWORK_WIDTH*(i-1) to g_NETWORK_WIDTH*(i) - 1),
+                   inputs           => r_layer_connections( g_NETWORK_HEIGHT*(i-1) to g_NETWORK_HEIGHT*(i) - 1),
                    outputs          => network_outputs
                 );
         end generate last_layer;
