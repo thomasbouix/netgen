@@ -69,7 +69,6 @@ begin
                 );
         end generate first_layer;
 
-
         middle_layers : if i > 0 and i < g_NETWORK_LAYERS - 1 generate
 
             ML : generic_layer 

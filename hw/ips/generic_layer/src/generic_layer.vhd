@@ -31,9 +31,9 @@ architecture rtl of generic_layer is
     type T_SM           is (ADDING_INPUTS, COMPUTING_OUTPUTS);
 
     signal r_sm         : T_SM                                  := ADDING_INPUTS;
-    signal weights      : t_data_array(0 to g_NB_WEIGHTS - 1)   := (others => (0 => '1', others => '0'));   -- weights[i] = 1
-    signal offsets      : t_data_array(0 to g_NB_WEIGHTS - 1)   := (others => (0 => '1', others => '0'));   -- offsets[i] = 1
-    signal inputs_sum   : integer                               := 0;                                       -- used to compute the sum of all inputs
+    signal weights      : t_int_array(0 to g_NB_WEIGHTS)        := (others => 1);       -- weights[i] = 1
+    signal offsets      : t_int_array(0 to g_NB_WEIGHTS)        := (others => 1);       -- offsets[i] = 1
+    signal inputs_sum   : integer                               := 0;                   -- used to compute the sum of all inputs
 
 begin
 
@@ -50,8 +50,8 @@ begin
 
                 res     :=  0 ;
 
-                weights <= (others => (0 => '1', others => '0') );
-                offsets <= (others => (0 => '1', others => '0') );
+                weights <= (others => 1);
+                offsets <= (others => 1);
                 outputs <= (others => (others => '0'));
 
                 r_sm    <= ADDING_INPUTS;
@@ -62,30 +62,25 @@ begin
 
                     when ADDING_INPUTS =>           
 
-                        res     := 0;
-                        -- res = i(0) + i(1) + ... + i(n-1)
-                        loop_adding_inputs : for i in 0 to g_NB_INPUTS-1 loop
-                            res := res + to_integer( inputs(i) );
+                        res             := 0;
+
+                        loop_adding_inputs : for i in 0 to g_NB_INPUTS-1 loop           -- res = i(0) + i(1) + ... + i(n-1)
+                            res         := res + to_integer( inputs(i) );
                         end loop;
 
-                        inputs_sum  <= res;
-                        r_sm        <= COMPUTING_OUTPUTS;
+                        inputs_sum      <= res;
+                        r_sm            <= COMPUTING_OUTPUTS;
 
                     when COMPUTING_OUTPUTS =>       
                         
-                        -- outputs[i] = ( weights[i] * inputs_sum ) + ( NB_INPUTS * offsets[i] )
-                        loop_computing_outputs : for i in 0 to g_NB_WEIGHTS-1 loop
-
-                            outputs(i)  <= to_signed(
-                                    to_integer(weights(i)) * inputs_sum + (g_NB_INPUTS * to_integer(offsets(i)))
-                            , p_DATA_WIDTH);
-
+                        loop_computing_outputs : for i in 0 to g_NB_WEIGHTS-1 loop      
+                            outputs(i)  <= to_signed( weights(i)*inputs_sum + (g_NB_INPUTS * offsets(i)) , p_DATA_WIDTH );
                         end loop;
 
-                        r_sm       <= ADDING_INPUTS;
+                        r_sm            <= ADDING_INPUTS;
 
                     when others =>
-                        r_sm       <= ADDING_INPUTS;
+                        r_sm            <= ADDING_INPUTS;
 
                 end case;
             end if;

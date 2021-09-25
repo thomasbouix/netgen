@@ -11,8 +11,11 @@ package parameters is
     -- atomic data element
     subtype t_data is signed(p_DATA_WIDTH-1 downto 0);
 
-    -- array of data
+    -- array of data for IPs' IO
     type t_data_array is array (integer range <>) of T_DATA;
+
+    -- array of integer for IPs' registers
+    type t_int_array    is array (integer range <>) of integer;
 
 end package;
  

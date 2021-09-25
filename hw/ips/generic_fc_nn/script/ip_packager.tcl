@@ -6,7 +6,7 @@
 
 source ../parameters/parameters.tcl
 
-set ip_name "generic_layer" 
+set ip_name "generic_fc_nn" 
 
 create_project $ip_name . -part $part
 set_property board_part $board [current_project]
