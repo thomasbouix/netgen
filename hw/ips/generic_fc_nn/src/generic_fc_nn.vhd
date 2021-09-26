@@ -122,7 +122,7 @@ begin
                 generic map (
                     g_NB_INPUTS         => g_NETWORK_HEIGHT,
                     g_NB_WEIGHTS        => g_NETWORK_HEIGHT,
-                    g_MEM_BASE          => 16#4000_0000# + i * (g_NETWORK_HEIGHT)
+                    g_MEM_BASE          => 16#4000_0000# + i * (g_NETWORK_HEIGHT) * 2
                 )
 
                 port map (
@@ -150,7 +150,7 @@ begin
                 generic map (
                     g_NB_INPUTS         => g_NETWORK_HEIGHT,
                     g_NB_WEIGHTS        => g_NETWORK_OUTPUTS,
-                    g_MEM_BASE          => 16#4000_0000# + i * (g_NETWORK_HEIGHT)
+                    g_MEM_BASE          => 16#4000_0000# + i * (g_NETWORK_HEIGHT) * 2
                 )
 
                 port map (
