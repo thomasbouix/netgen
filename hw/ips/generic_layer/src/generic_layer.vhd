@@ -53,8 +53,8 @@ end entity;
 
 architecture rtl of generic_layer is
 
-    type T_CPT_SM       is (ADDING_INPUTS, COMPUTING_OUTPUTS);
-    type T_CFG_SM       is (WAIT_ADDR, WAIT_DATA, WRITE_RESP);
+    type T_CPT_SM               is (ADDING_INPUTS, COMPUTING_OUTPUTS);
+    type T_CFG_SM               is (WAIT_ADDR, WAIT_DATA, WRITE_RESP);
 
     signal r_cpt_sm             : T_CPT_SM                                  := ADDING_INPUTS;
     signal r_cfg_sm             : T_CFG_SM                                  := WAIT_ADDR;
@@ -73,9 +73,9 @@ begin
     -- the configuration interface is write only : there are no read channels
     p_configuration : process(clk) is
 
-        variable v_write_addr   : integer   :=  0 ;                   
-        variable v_weight_addr  : std_logic := '0';     -- the configuration addr is a weight addr
-        variable v_offset_addr  : std_logic := '0';     -- the configuration addr is an offset addr
+        variable v_write_addr       : integer   :=  0 ;                   
+        variable v_weight_addr      : std_logic := '0';     -- the configuration addr is a weight addr
+        variable v_offset_addr      : std_logic := '0';     -- the configuration addr is an offset addr
 
     begin
 
@@ -83,13 +83,18 @@ begin
 
             if rstn = '0' then
 
-                v_write_addr    :=  0 ;
-                v_weight_addr   := '0';
-                v_offset_addr   := '0';
+                v_write_addr        :=  0 ;
+                v_weight_addr       := '0';
+                v_offset_addr       := '0';
 
-                weights         <= (others => 1);
-                offsets         <= (others => 0);
-                r_cfg_sm        <= WAIT_ADDR;
+                s_axi_cfg_awready   <= '0';
+                s_axi_cfg_wready    <= '0';
+                s_axi_cfg_bvalid    <= '0';
+                s_axi_cfg_bresp     <= "00";
+
+                weights             <= (others => 1);
+                offsets             <= (others => 0);
+                r_cfg_sm            <= WAIT_ADDR;
 
             else 
                 
@@ -97,9 +102,9 @@ begin
 
                     when WAIT_ADDR =>
 
-                        v_write_addr    :=  0 ;
-                        v_weight_addr   := '0';
-                        v_offset_addr   := '0';
+                        v_write_addr                :=  0 ;
+                        v_weight_addr               := '0';
+                        v_offset_addr               := '0';
 
                         if s_axi_cfg_awvalid = '1' then                  
 
@@ -124,7 +129,7 @@ begin
 
                     when WAIT_DATA =>
 
-                        s_axi_cfg_awready       <= '0';
+                        s_axi_cfg_awready               <= '0';
                         
                         if s_axi_cfg_wvalid = '1' then
 
@@ -135,19 +140,19 @@ begin
                                offsets(v_write_addr)    <= to_integer(signed(s_axi_cfg_wdata)); 
                             end if;
 
-                            s_axi_cfg_wready    <= '1';
-                            r_cfg_sm            <= WRITE_RESP;
+                            s_axi_cfg_wready            <= '1';
+                            r_cfg_sm                    <= WRITE_RESP;
                         end if;
 
                     when WRITE_RESP =>
 
-                        s_axi_cfg_wready        <= '0';
-                        s_axi_cfg_bvalid        <= '1';
-                        s_axi_cfg_bresp         <= "00";
+                        s_axi_cfg_wready                <= '0';
+                        s_axi_cfg_bvalid                <= '1';
+                        s_axi_cfg_bresp                 <= "00";
 
                         if s_axi_cfg_bready = '1' then
-                            s_axi_cfg_bvalid    <= '0';
-                            r_cfg_sm            <= WAIT_ADDR;
+                            s_axi_cfg_bvalid            <= '0';
+                            r_cfg_sm                    <= WAIT_ADDR;
                         end if;
 
                 end case;
@@ -167,9 +172,9 @@ begin
             
             if rstn = '0' then
 
-                res     :=  0 ;
-                outputs <= (others => (others => '0'));
-                r_cpt_sm    <= ADDING_INPUTS;
+                res                     :=  0 ;
+                outputs                 <= (others => (others => '0'));
+                r_cpt_sm                <= ADDING_INPUTS;
 
             else 
 
@@ -184,7 +189,7 @@ begin
                         end loop;
 
                         inputs_sum      <= res;
-                        r_cpt_sm            <= COMPUTING_OUTPUTS;
+                        r_cpt_sm        <= COMPUTING_OUTPUTS;
 
                     when COMPUTING_OUTPUTS =>       
                         
@@ -192,10 +197,10 @@ begin
                             outputs(i)  <= to_signed( weights(i)*inputs_sum + (g_NB_INPUTS * offsets(i)) , p_DATA_WIDTH );
                         end loop;
 
-                        r_cpt_sm            <= ADDING_INPUTS;
+                        r_cpt_sm        <= ADDING_INPUTS;
 
                     when others =>
-                        r_cpt_sm            <= ADDING_INPUTS;
+                        r_cpt_sm        <= ADDING_INPUTS;
 
                 end case;
             end if;
