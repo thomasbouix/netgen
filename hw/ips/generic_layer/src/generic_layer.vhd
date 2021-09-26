@@ -12,10 +12,9 @@ use work.parameters.all;
 entity generic_layer is 
 
     generic (
-        g_NB_INPUTS             : integer                           := 2; 
-        g_NB_WEIGHTS            : integer                           := 4;
-        g_BASE_ADDR             : std_logic_vector(31 downto 0)     := X"4000_0000";
-        g_END_ADDR              : std_logic_vector(31 downto 0)     := X"7FFF_FFFF"
+        g_NB_INPUTS             : integer       := 2; 
+        g_NB_WEIGHTS            : integer       := 4;
+        g_MEM_BASE              : integer       := 16#4000_0000#
     );
 
     port(
@@ -57,16 +56,26 @@ architecture rtl of generic_layer is
     type T_CPT_SM       is (ADDING_INPUTS, COMPUTING_OUTPUTS);
     type T_CFG_SM       is (WAIT_ADDR, WAIT_DATA, WRITE_RESP);
 
-    signal r_cpt_sm     : T_CPT_SM                                  := ADDING_INPUTS;
-    signal r_cfg_sm     : T_CFG_SM                                  := WAIT_ADDR;
-    signal weights      : t_int_array(0 to g_NB_WEIGHTS)            := (others => 1);       -- weights[i] = 1
-    signal offsets      : t_int_array(0 to g_NB_WEIGHTS)            := (others => 0);       -- offsets[i] = 0
-    signal inputs_sum   : integer                                   := 0;                   -- used to compute the sum of all inputs
+    signal r_cpt_sm             : T_CPT_SM                                  := ADDING_INPUTS;
+    signal r_cfg_sm             : T_CFG_SM                                  := WAIT_ADDR;
+    signal weights              : t_int_array(0 to g_NB_WEIGHTS)            := (others => 1);       -- weights[i] = 1
+    signal offsets              : t_int_array(0 to g_NB_WEIGHTS)            := (others => 0);       -- offsets[i] = 0
+    signal inputs_sum           : integer                                   := 0;                   -- used to compute the sum of all inputs
+
+    -- ip address space ( 1 addr / data )
+    constant c_WEIGHTS_MEM_BASE : integer                                   := g_MEM_BASE;
+    constant c_WEIGHTS_MEM_END  : integer                                   := g_MEM_BASE + g_NB_WEIGHTS;  
+    constant c_OFFSETS_MEM_BASE : integer                                   := g_MEM_BASE + g_NB_WEIGHTS + 1;
+    constant c_OFFSETS_MEM_END  : integer                                   := g_MEM_BASE + g_NB_WEIGHTS + 1 + g_NB_WEIGHTS;
 
 begin
 
-    -- the configuration interface is write only
+    -- the configuration interface is write only : there are no read channels
     p_configuration : process(clk) is
+
+        variable v_write_addr   : integer   :=  0 ;                   
+        variable v_weight_addr  : std_logic := '0';     -- the configuration addr is a weight addr
+        variable v_offset_addr  : std_logic := '0';     -- the configuration addr is an offset addr
 
     begin
 
@@ -74,9 +83,13 @@ begin
 
             if rstn = '0' then
 
-                weights     <= (others => 1);
-                offsets     <= (others => 0);
-                r_cfg_sm    <= WAIT_ADDR;
+                v_write_addr    :=  0 ;
+                v_weight_addr   := '0';
+                v_offset_addr   := '0';
+
+                weights         <= (others => 1);
+                offsets         <= (others => 0);
+                r_cfg_sm        <= WAIT_ADDR;
 
             else 
                 
@@ -84,12 +97,28 @@ begin
 
                     when WAIT_ADDR =>
 
+                        v_write_addr    :=  0 ;
+                        v_weight_addr   := '0';
+                        v_offset_addr   := '0';
+
                         if s_axi_cfg_awvalid = '1' then                  
 
-                         -- if s_axi_cfg_awaddr = ... then
-                         --     s_axi_cfg_awready   <= '1';
-                         --     r_cfg_sm            <= WAIT_DATA;
-                         -- end if;
+                            v_write_addr            := to_integer(unsigned(s_axi_cfg_awaddr));
+
+                            if  v_write_addr >= c_WEIGHTS_MEM_BASE and v_write_addr <= c_WEIGHTS_MEM_END then       -- configuring a weight
+                                v_weight_addr       := '1';
+                                s_axi_cfg_awready   <= '1';
+                                r_cfg_sm            <= WAIT_DATA;
+
+                            elsif v_write_addr >= c_OFFSETS_MEM_BASE and v_write_addr <= c_OFFSETS_MEM_END then     -- configuring an offset
+                                v_offset_addr       := '1';
+                                s_axi_cfg_awready   <= '1';
+                                r_cfg_sm            <= WAIT_DATA;
+
+                            else                                                                                    -- cfg addr is not in the ip address space
+                                r_cfg_sm            <= WAIT_ADDR;
+                            end if;
+
 
                         end if;
 
@@ -98,9 +127,15 @@ begin
                         s_axi_cfg_awready       <= '0';
                         
                         if s_axi_cfg_wvalid = '1' then
+
+                            if v_weight_addr = '1' then
+                               weights(v_write_addr)    <= to_integer(signed(s_axi_cfg_wdata)); 
+
+                            elsif v_offset_addr = '1' then
+                               offsets(v_write_addr)    <= to_integer(signed(s_axi_cfg_wdata)); 
+                            end if;
+
                             s_axi_cfg_wready    <= '1';
-                         -- weights(addr)       <= data;
-                         -- offsets(addr)       <= data;
                             r_cfg_sm            <= WRITE_RESP;
                         end if;
 
