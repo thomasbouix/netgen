@@ -1,5 +1,4 @@
 #-----------------------------------------------------------
-# Vivado v2020.2 (64-bit)
 # IP Packager Script
 # A appeler depuis le dossier de l'ip
 #-----------------------------------------------------------
@@ -14,6 +13,7 @@ set_property board_part $board [current_project]
 set_property target_language VHDL [current_project]
 add_files -norecurse src/$ip_name.vhd
 import_files -norecurse ../parameters/parameters.vhd
+import_files -norecurse ../generic_layer/src/generic_layer.vhd
 update_compile_order -fileset sources_1
 set_property SOURCE_SET sources_1 [get_filesets sim_1]
 add_files -fileset sim_1 -norecurse tb/$ip_name\_tb.vhd

@@ -1,5 +1,5 @@
 all : 
-	cd generic_layer && $(MAKE) vivado
+	# cd generic_layer && $(MAKE) vivado
 	cd generic_fc_nn && $(MAKE) vivado
 
 clean : 

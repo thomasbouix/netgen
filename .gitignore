@@ -1,3 +1,18 @@
 # GHDL
 *.o
 *.cf
+
+# Vivado 
+*.cache
+*.hw
+*.runs
+*.srcs
+*.gen
+*.xpr
+*.jou
+*.log
+*.str
+*.xml
+xgui
+
+
