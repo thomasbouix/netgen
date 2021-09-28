@@ -8,7 +8,7 @@ entity generic_layer_tb is
 
     generic (
         g_NB_INPUTS         : integer := 2;
-        g_NB_WEIGHTS        : integer := 2
+        g_NB_OUTPUTS        : integer := 4
     );
 
 end entity;
@@ -21,7 +21,7 @@ architecture behavior of generic_layer_tb is
     signal clk                  : std_logic;
     signal rstn                 : std_logic;
     signal inputs               : std_logic_vector(g_NB_INPUTS  * p_DATA_WIDTH - 1 downto 0)   := (others => '0');
-    signal outputs              : std_logic_vector(g_NB_WEIGHTS * p_DATA_WIDTH - 1 downto 0)   := (others => '0'); 
+    signal outputs              : std_logic_vector(g_NB_OUTPUTS * p_DATA_WIDTH - 1 downto 0)   := (others => '0'); 
     signal s_axi_cfg_awaddr     : std_logic_vector(31 downto 0);
     signal s_axi_cfg_awprot     : std_logic_vector(2 downto 0);
     signal s_axi_cfg_awvalid    : std_logic;
@@ -40,7 +40,7 @@ begin
 
         generic map ( 
             g_NB_INPUTS         => g_NB_INPUTS       ,
-            g_NB_WEIGHTS        => g_NB_WEIGHTS 
+            g_NB_OUTPUTS        => g_NB_OUTPUTS 
         )
 
         port map    ( 
