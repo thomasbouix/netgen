@@ -12,33 +12,41 @@ use work.parameters.all;
 entity generic_fc_nn is 
 
     generic (
-        g_NETWORK_INPUTS        : integer := 2;     -- number of inputs of the first layer
-        g_NETWORK_OUTPUTS       : integer := 4;     -- number of outputs of the last layer
-        g_NETWORK_HEIGHT        : integer := 3;     -- number of inputs / outputs of middle layers
-        g_NETWORK_LAYERS        : integer := 5      -- number of layers inside the network
+        g_NETWORK_INPUTS    : integer := 2;     -- number of inputs of the first layer
+        g_NETWORK_OUTPUTS   : integer := 4;     -- number of outputs of the last layer
+        g_NETWORK_HEIGHT    : integer := 3;     -- number of inputs / outputs of middle layers
+        g_NETWORK_LAYERS    : integer := 5      -- number of layers inside the network
     );
 
     port(
-        clk                     : in  std_logic;
-        rstn                    : in  std_logic;
+        clk                 : in  std_logic;
+        rstn                : in  std_logic;
 
         ----------------------------------------------------
         ------- axi lite slave configuration interface -----
         ----------------------------------------------------
 
-        s_axi_cfg_awaddr        : in  std_logic_vector(31 downto 0);
-        s_axi_cfg_awprot        : in  std_logic_vector(2 downto 0);
-        s_axi_cfg_awvalid       : in  std_logic;
-        s_axi_cfg_awready       : out std_logic;
+        s_axi_awaddr        : in  std_logic_vector(31 downto 0);
+        s_axi_awprot        : in  std_logic_vector(2 downto 0);
+        s_axi_awvalid       : in  std_logic;
+        s_axi_awready       : out std_logic;
 
-        s_axi_cfg_wdata         : in  std_logic_vector(p_DATA_WIDTH - 1 downto 0);
-        s_axi_cfg_wstrb         : in  std_logic_vector((p_DATA_WIDTH / 8) - 1 downto 0);
-        s_axi_cfg_wvalid        : in  std_logic;
-        s_axi_cfg_wready        : out std_logic;
+        s_axi_wdata         : in  std_logic_vector(p_DATA_WIDTH - 1 downto 0);
+        s_axi_wstrb         : in  std_logic_vector((p_DATA_WIDTH / 8) - 1 downto 0);
+        s_axi_wvalid        : in  std_logic;
+        s_axi_wready        : out std_logic;
 
-        s_axi_cfg_bresp         : out std_logic_vector(1 downto 0);     
-        s_axi_cfg_bvalid        : out std_logic;
-        s_axi_cfg_bready        : in  std_logic
+        s_axi_bresp         : out std_logic_vector(1 downto 0);     
+        s_axi_bvalid        : out std_logic;
+        s_axi_bready        : in  std_logic;
+
+        ----------------------------------------------------
+        --------- axi stream slave data interface ----------
+        ----------------------------------------------------
+        s_axis_tvalid      : in 
+        s_axis_tready      : out 
+        s_axis_tdata       : out 
+
     );
 
 end entity;
@@ -61,17 +69,17 @@ architecture rtl of generic_fc_nn is
             inputs              : in  std_logic_vector( g_NB_INPUTS  * p_DATA_WIDTH - 1 downto 0);
             outputs             : out std_logic_vector( g_NB_OUTPUTS * p_DATA_WIDTH - 1 downto 0) := (others => '0');
 
-            s_axi_cfg_awaddr    : in  std_logic_vector(31 downto 0);
-            s_axi_cfg_awprot    : in  std_logic_vector(2 downto 0);
-            s_axi_cfg_awvalid   : in  std_logic;
-            s_axi_cfg_awready   : out std_logic;
-            s_axi_cfg_wdata     : in  std_logic_vector(p_DATA_WIDTH - 1 downto 0);
-            s_axi_cfg_wstrb     : in  std_logic_vector((p_DATA_WIDTH / 8) - 1 downto 0);
-            s_axi_cfg_wvalid    : in  std_logic;
-            s_axi_cfg_wready    : out std_logic;
-            s_axi_cfg_bresp     : out std_logic_vector(1 downto 0);     
-            s_axi_cfg_bvalid    : out std_logic;
-            s_axi_cfg_bready    : in  std_logic
+            s_axi_awaddr        : in  std_logic_vector(31 downto 0);
+            s_axi_awprot        : in  std_logic_vector(2 downto 0);
+            s_axi_awvalid       : in  std_logic;
+            s_axi_awready       : out std_logic;
+            s_axi_wdata         : in  std_logic_vector(p_DATA_WIDTH - 1 downto 0);
+            s_axi_wstrb         : in  std_logic_vector((p_DATA_WIDTH / 8) - 1 downto 0);
+            s_axi_wvalid        : in  std_logic;
+            s_axi_wready        : out std_logic;
+            s_axi_bresp         : out std_logic_vector(1 downto 0);     
+            s_axi_bvalid        : out std_logic;
+            s_axi_bready        : in  std_logic
         );
 
     end component;
@@ -88,31 +96,31 @@ begin
 
             FL : generic_layer
                 generic map (
-                    g_NB_INPUTS         => g_NETWORK_INPUTS,
-                    g_NB_OUTPUTS        => g_NETWORK_HEIGHT,
-                    g_MEM_BASE          => 16#4000_0000#
+                    g_NB_INPUTS     => g_NETWORK_INPUTS,
+                    g_NB_OUTPUTS    => g_NETWORK_HEIGHT,
+                    g_MEM_BASE      => 16#4000_0000#
                 )
 
                 port map (
-                    clk                 => clk,  
-                    rstn                => rstn,
+                    clk             => clk,  
+                    rstn            => rstn,
                     
-                    inputs              => r_network_inputs,
+                    inputs          => r_network_inputs,
 
-                    outputs             => r_layer_connections((g_NETWORK_LAYERS - 1) * g_NETWORK_HEIGHT * p_DATA_WIDTH - 1 downto 
+                    outputs         => r_layer_connections((g_NETWORK_LAYERS - 1) * g_NETWORK_HEIGHT * p_DATA_WIDTH - 1 downto 
                                                                (g_NETWORK_LAYERS - 1) * g_NETWORK_HEIGHT * p_DATA_WIDTH - p_DATA_WIDTH * g_NETWORK_HEIGHT),
 
-                    s_axi_cfg_awaddr    => s_axi_cfg_awaddr, 
-                    s_axi_cfg_awprot    => s_axi_cfg_awprot, 
-                    s_axi_cfg_awvalid   => s_axi_cfg_awvalid,
-                    s_axi_cfg_awready   => s_axi_cfg_awready,
-                    s_axi_cfg_wdata     => s_axi_cfg_wdata,  
-                    s_axi_cfg_wstrb     => s_axi_cfg_wstrb,  
-                    s_axi_cfg_wvalid    => s_axi_cfg_wvalid, 
-                    s_axi_cfg_wready    => s_axi_cfg_wready, 
-                    s_axi_cfg_bresp     => s_axi_cfg_bresp,  
-                    s_axi_cfg_bvalid    => s_axi_cfg_bvalid, 
-                    s_axi_cfg_bready    => s_axi_cfg_bready
+                    s_axi_awaddr    => s_axi_awaddr, 
+                    s_axi_awprot    => s_axi_awprot, 
+                    s_axi_awvalid   => s_axi_awvalid,
+                    s_axi_awready   => s_axi_awready,
+                    s_axi_wdata     => s_axi_wdata,  
+                    s_axi_wstrb     => s_axi_wstrb,  
+                    s_axi_wvalid    => s_axi_wvalid, 
+                    s_axi_wready    => s_axi_wready, 
+                    s_axi_bresp     => s_axi_bresp,  
+                    s_axi_bvalid    => s_axi_bvalid, 
+                    s_axi_bready    => s_axi_bready
 
                 );
         end generate first_layer;
@@ -122,32 +130,32 @@ begin
             ML : generic_layer 
                 
                 generic map (
-                    g_NB_INPUTS         => g_NETWORK_HEIGHT,
-                    g_NB_OUTPUTS        => g_NETWORK_HEIGHT,
-                    g_MEM_BASE          => 16#4000_0000# + i * (g_NETWORK_HEIGHT) * 2
+                    g_NB_INPUTS     => g_NETWORK_HEIGHT,
+                    g_NB_OUTPUTS    => g_NETWORK_HEIGHT,
+                    g_MEM_BASE      => 16#4000_0000# + i * (g_NETWORK_HEIGHT) * 2
                 )
 
                 port map (
-                    clk                 => clk,  
-                    rstn                => rstn,
+                    clk             => clk,  
+                    rstn            => rstn,
 
-                    inputs              => r_layer_connections((g_NETWORK_LAYERS - 1) * g_NETWORK_HEIGHT * p_DATA_WIDTH - 1 - p_DATA_WIDTH * g_NETWORK_HEIGHT * (i-1) downto 
+                    inputs          => r_layer_connections((g_NETWORK_LAYERS - 1) * g_NETWORK_HEIGHT * p_DATA_WIDTH - 1 - p_DATA_WIDTH * g_NETWORK_HEIGHT * (i-1) downto 
                                                                (g_NETWORK_LAYERS - 1) * g_NETWORK_HEIGHT * p_DATA_WIDTH     - p_DATA_WIDTH * g_NETWORK_HEIGHT * (i)),
 
-                    outputs             => r_layer_connections((g_NETWORK_LAYERS - 1) * g_NETWORK_HEIGHT * p_DATA_WIDTH - 1 - p_DATA_WIDTH * g_NETWORK_HEIGHT * (i)   downto 
+                    outputs         => r_layer_connections((g_NETWORK_LAYERS - 1) * g_NETWORK_HEIGHT * p_DATA_WIDTH - 1 - p_DATA_WIDTH * g_NETWORK_HEIGHT * (i)   downto 
                                                                (g_NETWORK_LAYERS - 1) * g_NETWORK_HEIGHT * p_DATA_WIDTH     - p_DATA_WIDTH * g_NETWORK_HEIGHT * (i+1)),
 
-                    s_axi_cfg_awaddr    => s_axi_cfg_awaddr, 
-                    s_axi_cfg_awprot    => s_axi_cfg_awprot, 
-                    s_axi_cfg_awvalid   => s_axi_cfg_awvalid,
-                    s_axi_cfg_awready   => s_axi_cfg_awready,
-                    s_axi_cfg_wdata     => s_axi_cfg_wdata,  
-                    s_axi_cfg_wstrb     => s_axi_cfg_wstrb,  
-                    s_axi_cfg_wvalid    => s_axi_cfg_wvalid, 
-                    s_axi_cfg_wready    => s_axi_cfg_wready, 
-                    s_axi_cfg_bresp     => s_axi_cfg_bresp,  
-                    s_axi_cfg_bvalid    => s_axi_cfg_bvalid, 
-                    s_axi_cfg_bready    => s_axi_cfg_bready
+                    s_axi_awaddr    => s_axi_awaddr, 
+                    s_axi_awprot    => s_axi_awprot, 
+                    s_axi_awvalid   => s_axi_awvalid,
+                    s_axi_awready   => s_axi_awready,
+                    s_axi_wdata     => s_axi_wdata,  
+                    s_axi_wstrb     => s_axi_wstrb,  
+                    s_axi_wvalid    => s_axi_wvalid, 
+                    s_axi_wready    => s_axi_wready, 
+                    s_axi_bresp     => s_axi_bresp,  
+                    s_axi_bvalid    => s_axi_bvalid, 
+                    s_axi_bready    => s_axi_bready
                 );
         end generate middle_layers;
 
@@ -155,31 +163,31 @@ begin
 
             LL : generic_layer
                 generic map (
-                    g_NB_INPUTS         => g_NETWORK_HEIGHT,
-                    g_NB_OUTPUTS        => g_NETWORK_OUTPUTS,
-                    g_MEM_BASE          => 16#4000_0000# + i * (g_NETWORK_HEIGHT) * 2
+                    g_NB_INPUTS     => g_NETWORK_HEIGHT,
+                    g_NB_OUTPUTS    => g_NETWORK_OUTPUTS,
+                    g_MEM_BASE      => 16#4000_0000# + i * (g_NETWORK_HEIGHT) * 2
                 )
 
                 port map (
-                    clk                 => clk,  
-                    rstn                => rstn,
+                    clk             => clk,  
+                    rstn            => rstn,
 
-                    inputs              => r_layer_connections((g_NETWORK_LAYERS - 1) * g_NETWORK_HEIGHT * p_DATA_WIDTH - 1 - p_DATA_WIDTH * g_NETWORK_HEIGHT * (i-1) downto 
-                                                               (g_NETWORK_LAYERS - 1) * g_NETWORK_HEIGHT * p_DATA_WIDTH     - p_DATA_WIDTH * g_NETWORK_HEIGHT * (i)),
+                    inputs          => r_layer_connections((g_NETWORK_LAYERS - 1) * g_NETWORK_HEIGHT * p_DATA_WIDTH - 1 - p_DATA_WIDTH * g_NETWORK_HEIGHT * (i-1) downto 
+                                                           (g_NETWORK_LAYERS - 1) * g_NETWORK_HEIGHT * p_DATA_WIDTH     - p_DATA_WIDTH * g_NETWORK_HEIGHT * (i)),
 
-                    outputs             => r_network_outputs,
+                    outputs         => r_network_outputs,
 
-                    s_axi_cfg_awaddr    => s_axi_cfg_awaddr, 
-                    s_axi_cfg_awprot    => s_axi_cfg_awprot, 
-                    s_axi_cfg_awvalid   => s_axi_cfg_awvalid,
-                    s_axi_cfg_awready   => s_axi_cfg_awready,
-                    s_axi_cfg_wdata     => s_axi_cfg_wdata,  
-                    s_axi_cfg_wstrb     => s_axi_cfg_wstrb,  
-                    s_axi_cfg_wvalid    => s_axi_cfg_wvalid, 
-                    s_axi_cfg_wready    => s_axi_cfg_wready, 
-                    s_axi_cfg_bresp     => s_axi_cfg_bresp,  
-                    s_axi_cfg_bvalid    => s_axi_cfg_bvalid, 
-                    s_axi_cfg_bready    => s_axi_cfg_bready
+                    s_axi_awaddr    => s_axi_awaddr, 
+                    s_axi_awprot    => s_axi_awprot, 
+                    s_axi_awvalid   => s_axi_awvalid,
+                    s_axi_awready   => s_axi_awready,
+                    s_axi_wdata     => s_axi_wdata,  
+                    s_axi_wstrb     => s_axi_wstrb,  
+                    s_axi_wvalid    => s_axi_wvalid, 
+                    s_axi_wready    => s_axi_wready, 
+                    s_axi_bresp     => s_axi_bresp,  
+                    s_axi_bvalid    => s_axi_bvalid, 
+                    s_axi_bready    => s_axi_bready
                 );
         end generate last_layer;
 
