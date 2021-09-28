@@ -1,6 +1,7 @@
-# GHDL
+# GHDL - GTKWave
 *.o
 *.cf
+*.vcd
 
 # Vivado 
 *.cache

@@ -25,8 +25,8 @@ entity generic_layer is
         ------------------- layer I/O ----------------------
         ----------------------------------------------------
 
-        inputs                  : in  t_data_array(0 to g_NB_INPUTS  - 1); 
-        outputs                 : out t_data_array(0 to g_NB_WEIGHTS - 1)   := (others => (others => '0'));
+        inputs                  : in  std_logic_vector( g_NB_INPUTS  * p_DATA_WIDTH - 1 downto 0);
+        outputs                 : out std_logic_vector( g_NB_WEIGHTS * p_DATA_WIDTH - 1 downto 0) := (others => '0');
 
         ----------------------------------------------------
         ------- axi lite slave configuration interface -----
@@ -53,14 +53,14 @@ end entity;
 
 architecture rtl of generic_layer is
 
-    type T_CPT_SM               is (ADDING_INPUTS, COMPUTING_OUTPUTS);
     type T_CFG_SM               is (WAIT_ADDR, WAIT_DATA, WRITE_RESP);
 
-    signal r_cpt_sm             : T_CPT_SM                                  := ADDING_INPUTS;
     signal r_cfg_sm             : T_CFG_SM                                  := WAIT_ADDR;
     signal weights              : t_int_array(0 to g_NB_WEIGHTS)            := (others => 1);       -- weights[i] = 1
     signal offsets              : t_int_array(0 to g_NB_WEIGHTS)            := (others => 0);       -- offsets[i] = 0
-    signal inputs_sum           : integer                                   := 0;                   -- used to compute the sum of all inputs
+
+    signal r_inputs             : t_data_array(0 to g_NB_INPUTS  - 1);                              -- facilitate I/O manipulation   
+    signal r_outputs            : t_data_array(0 to g_NB_WEIGHTS - 1);                              -- facilitate I/O manipulation   
 
     -- ip address space ( 1 addr / data )
     constant c_WEIGHTS_MEM_BASE : integer                                   := g_MEM_BASE;
@@ -69,6 +69,22 @@ architecture rtl of generic_layer is
     constant c_OFFSETS_MEM_END  : integer                                   := g_MEM_BASE + g_NB_WEIGHTS + 1 + g_NB_WEIGHTS;
 
 begin
+
+    -- combinatory process for type conversion
+    p_io_conversion : process(inputs, r_outputs) is 
+    
+    begin
+
+        for i in 0 to g_NB_INPUTS - 1 loop
+            r_inputs(i)     <= signed(inputs(p_DATA_WIDTH * (g_NB_INPUTS - i) - 1 downto p_DATA_WIDTH * (g_NB_INPUTS - i - 1)));
+        end loop;
+
+
+        for i in 0 to g_NB_WEIGHTS - 1 loop
+            outputs(p_DATA_WIDTH * (g_NB_INPUTS - i) - 1 downto p_DATA_WIDTH * (g_NB_INPUTS - i - 1))   <= std_logic_vector(r_outputs(i));
+        end loop;
+
+    end process;
 
     -- the configuration interface is write only : there are no read channels
     p_configuration : process(clk) is
@@ -92,8 +108,8 @@ begin
                 s_axi_cfg_bvalid    <= '0';
                 s_axi_cfg_bresp     <= "00";
 
-                weights             <= (others => 1);
-                offsets             <= (others => 0);
+                weights             <= (others => 2);
+                offsets             <= (others => 1);
                 r_cfg_sm            <= WAIT_ADDR;
 
             else 
@@ -161,10 +177,9 @@ begin
     end process; 
 
 
-    -- outputs are computed in two clock cycles to prevent timing errors
-    p_outputs : process(clk) is
+    p_r_outputs : process(clk) is
    
-        variable res    : integer   :=  0 ;
+        variable v_inputs_sum    : integer   :=  0 ;    -- sum of all inputs
     
     begin
 
@@ -172,37 +187,23 @@ begin
             
             if rstn = '0' then
 
-                res                     :=  0 ;
-                outputs                 <= (others => (others => '0'));
-                r_cpt_sm                <= ADDING_INPUTS;
+                v_inputs_sum        :=  0 ;
+                r_outputs           <= (others => (others => '0'));
 
             else 
 
-                case r_cpt_sm is
+                v_inputs_sum        := 0;
 
-                    when ADDING_INPUTS =>           
+                -- v_inputs_sum = i(0) + i(1) + ... + i(n-1)
+                loop_adding_inputs : for i in 0 to g_NB_INPUTS-1 loop           
+                    v_inputs_sum    := v_inputs_sum + to_integer( r_inputs(i) );
+                end loop;
 
-                        res             := 0;
+                -- outputs(i) = weights(i) * inputs_sum + ( nb_inputs * offsets(i) ) 
+                loop_computing_outputs : for i in 0 to g_NB_WEIGHTS-1 loop      
+                    r_outputs(i)    <= to_signed( weights(i)*v_inputs_sum + (g_NB_INPUTS * offsets(i)) , p_DATA_WIDTH );
+                end loop;
 
-                        loop_adding_inputs : for i in 0 to g_NB_INPUTS-1 loop           -- res = i(0) + i(1) + ... + i(n-1)
-                            res         := res + to_integer( inputs(i) );
-                        end loop;
-
-                        inputs_sum      <= res;
-                        r_cpt_sm        <= COMPUTING_OUTPUTS;
-
-                    when COMPUTING_OUTPUTS =>       
-                        
-                        loop_computing_outputs : for i in 0 to g_NB_WEIGHTS-1 loop      
-                            outputs(i)  <= to_signed( weights(i)*inputs_sum + (g_NB_INPUTS * offsets(i)) , p_DATA_WIDTH );
-                        end loop;
-
-                        r_cpt_sm        <= ADDING_INPUTS;
-
-                    when others =>
-                        r_cpt_sm        <= ADDING_INPUTS;
-
-                end case;
             end if;
         end if;
     end process;
