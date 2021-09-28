@@ -30,22 +30,29 @@ entity generic_fc_nn is
         s_axi_awprot        : in  std_logic_vector(2 downto 0);
         s_axi_awvalid       : in  std_logic;
         s_axi_awready       : out std_logic;
-
         s_axi_wdata         : in  std_logic_vector(p_DATA_WIDTH - 1 downto 0);
         s_axi_wstrb         : in  std_logic_vector((p_DATA_WIDTH / 8) - 1 downto 0);
         s_axi_wvalid        : in  std_logic;
         s_axi_wready        : out std_logic;
-
         s_axi_bresp         : out std_logic_vector(1 downto 0);     
         s_axi_bvalid        : out std_logic;
         s_axi_bready        : in  std_logic;
 
         ----------------------------------------------------
-        --------- axi stream slave data interface ----------
+        ------ axi stream slave data in interface ----------
         ----------------------------------------------------
-        s_axis_tvalid      : in 
-        s_axis_tready      : out 
-        s_axis_tdata       : out 
+        s_axis_tvalid       : in  std_logic;
+        s_axis_tlast        : in  std_logic;
+        s_axis_tdata        : in  std_logic_vector(p_DATA_WIDTH * g_NETWORK_INPUTS - 1 downto 0);       -- all inputs are sent in one cycle
+        s_axis_tready       : out std_logic;
+
+        ----------------------------------------------------
+        ------ axi stream slave data out interface ---------
+        ----------------------------------------------------
+        m_axis_tvalid       : out std_logic;
+        m_axis_tlast        : out std_logic;
+        m_axis_tdata        : out std_logic_vector(p_DATA_WIDTH * g_NETWORK_OUTPUTS - 1 downto 0);      -- all outputs are sent in one cycle
+        m_axis_tready       : in  std_logic 
 
     );
 
@@ -108,7 +115,7 @@ begin
                     inputs          => r_network_inputs,
 
                     outputs         => r_layer_connections((g_NETWORK_LAYERS - 1) * g_NETWORK_HEIGHT * p_DATA_WIDTH - 1 downto 
-                                                               (g_NETWORK_LAYERS - 1) * g_NETWORK_HEIGHT * p_DATA_WIDTH - p_DATA_WIDTH * g_NETWORK_HEIGHT),
+                                                           (g_NETWORK_LAYERS - 1) * g_NETWORK_HEIGHT * p_DATA_WIDTH - p_DATA_WIDTH * g_NETWORK_HEIGHT),
 
                     s_axi_awaddr    => s_axi_awaddr, 
                     s_axi_awprot    => s_axi_awprot, 
@@ -140,10 +147,10 @@ begin
                     rstn            => rstn,
 
                     inputs          => r_layer_connections((g_NETWORK_LAYERS - 1) * g_NETWORK_HEIGHT * p_DATA_WIDTH - 1 - p_DATA_WIDTH * g_NETWORK_HEIGHT * (i-1) downto 
-                                                               (g_NETWORK_LAYERS - 1) * g_NETWORK_HEIGHT * p_DATA_WIDTH     - p_DATA_WIDTH * g_NETWORK_HEIGHT * (i)),
+                                                           (g_NETWORK_LAYERS - 1) * g_NETWORK_HEIGHT * p_DATA_WIDTH     - p_DATA_WIDTH * g_NETWORK_HEIGHT * (i)),
 
                     outputs         => r_layer_connections((g_NETWORK_LAYERS - 1) * g_NETWORK_HEIGHT * p_DATA_WIDTH - 1 - p_DATA_WIDTH * g_NETWORK_HEIGHT * (i)   downto 
-                                                               (g_NETWORK_LAYERS - 1) * g_NETWORK_HEIGHT * p_DATA_WIDTH     - p_DATA_WIDTH * g_NETWORK_HEIGHT * (i+1)),
+                                                           (g_NETWORK_LAYERS - 1) * g_NETWORK_HEIGHT * p_DATA_WIDTH     - p_DATA_WIDTH * g_NETWORK_HEIGHT * (i+1)),
 
                     s_axi_awaddr    => s_axi_awaddr, 
                     s_axi_awprot    => s_axi_awprot, 
@@ -192,6 +199,60 @@ begin
         end generate last_layer;
 
     end generate layers;
+
+    -- receiving inputs through s_axis interface
+    p_inputs_processing : process(clk) is
+
+    begin
+
+        if rising_edge(clk) then
+
+            if rstn = '0' then
+
+                r_network_inputs        <= (others => '0');
+                s_axis_tready           <= '0';
+
+            else 
+
+                if s_axis_tvalid = '1' then
+                    r_network_inputs    <= s_axis_tdata;
+                    s_axis_tready       <= '1';                    
+                else
+                    s_axis_tready       <= '0';
+                end if;
+
+            end if;
+        end if;
+    end process;
+
+    -- formatting outputs to m_axis interface
+    -- TO DO : IS THE SLAVE IS READY ?
+    p_outputs_processing : process(clk) is
+
+    begin
+
+        if rising_edge(clk) then
+
+            if rstn = '0' then
+
+                m_axis_tdata            <= (others => '0');
+                m_axis_tvalid           <= '0';
+                m_axis_tlast            <= '0';
+
+            else 
+
+                m_axis_tvalid           <= '1';
+                m_axis_tlast            <= '0';
+                m_axis_tdata            <= r_network_outputs;
+
+            end if;
+        end if;
+
+
+    end process;
+
+
+
 
 end architecture;
 

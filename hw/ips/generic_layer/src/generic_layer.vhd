@@ -56,8 +56,8 @@ architecture rtl of generic_layer is
     type T_CFG_SM               is (WAIT_ADDR, WAIT_DATA, WRITE_RESP);                              -- axi state machine type
 
     signal r_cfg_sm             : T_CFG_SM                                  := WAIT_ADDR;
-    signal weights              : t_int_array(0 to g_NB_OUTPUTS)            := (others => 1);       -- weights[i] = 1
-    signal offsets              : t_int_array(0 to g_NB_OUTPUTS)            := (others => 0);       -- offsets[i] = 0
+    signal r_weights            : t_int_array(0 to g_NB_OUTPUTS)            := (others => 1);       -- weights[i] = 1
+    signal r_offsets            : t_int_array(0 to g_NB_OUTPUTS)            := (others => 0);       -- offsets[i] = 0
 
     signal r_inputs             : t_data_array(0 to g_NB_INPUTS  - 1);                              -- facilitate I/O manipulation   
     signal r_outputs            : t_data_array(0 to g_NB_OUTPUTS - 1);                              -- facilitate I/O manipulation   
@@ -76,12 +76,12 @@ begin
     begin
 
         for i in 0 to g_NB_INPUTS - 1 loop
-            r_inputs(i)     <= signed(inputs(p_DATA_WIDTH * (g_NB_INPUTS - i) - 1 downto p_DATA_WIDTH * (g_NB_INPUTS - i - 1)));
+            r_inputs(i) <= signed(inputs(p_DATA_WIDTH * (g_NB_INPUTS - i) - 1 downto p_DATA_WIDTH * (g_NB_INPUTS - i - 1)));
         end loop;
 
 
         for i in 0 to g_NB_OUTPUTS - 1 loop
-            outputs(p_DATA_WIDTH * (g_NB_OUTPUTS - i) - 1 downto p_DATA_WIDTH * (g_NB_OUTPUTS - i - 1))   <= std_logic_vector(r_outputs(i));
+            outputs(p_DATA_WIDTH * (g_NB_OUTPUTS - i) - 1 downto p_DATA_WIDTH * (g_NB_OUTPUTS - i - 1)) <= std_logic_vector(r_outputs(i));
         end loop;
 
     end process;
@@ -108,8 +108,8 @@ begin
                 s_axi_bvalid    <= '0';
                 s_axi_bresp     <= "00";
 
-                weights         <= (others => 2);
-                offsets         <= (others => 1);
+                r_weights       <= (others => 2);
+                r_offsets       <= (others => 1);
                 r_cfg_sm        <= WAIT_ADDR;
 
             else 
@@ -150,10 +150,10 @@ begin
                         if s_axi_wvalid = '1' then
 
                             if v_weight_addr = '1' then
-                               weights(v_write_addr)    <= to_integer(signed(s_axi_wdata)); 
+                               r_weights(v_write_addr)  <= to_integer(signed(s_axi_wdata)); 
 
                             elsif v_offset_addr = '1' then
-                               offsets(v_write_addr)    <= to_integer(signed(s_axi_wdata)); 
+                               r_offsets(v_write_addr)  <= to_integer(signed(s_axi_wdata)); 
                             end if;
 
                             s_axi_wready                <= '1';
@@ -162,13 +162,13 @@ begin
 
                     when WRITE_RESP =>
 
-                        s_axi_wready                <= '0';
-                        s_axi_bvalid                <= '1';
-                        s_axi_bresp                 <= "00";
+                        s_axi_wready                    <= '0';
+                        s_axi_bvalid                    <= '1';
+                        s_axi_bresp                     <= "00";
 
                         if s_axi_bready = '1' then
-                            s_axi_bvalid            <= '0';
-                            r_cfg_sm                <= WAIT_ADDR;
+                            s_axi_bvalid                <= '0';
+                            r_cfg_sm                    <= WAIT_ADDR;
                         end if;
 
                 end case;
@@ -177,9 +177,9 @@ begin
     end process; 
 
 
-    p_r_outputs : process(clk) is
+    p_processing_outputs : process(clk) is
    
-        variable v_inputs_sum    : integer   :=  0 ;    -- sum of all inputs
+        variable v_inputs_sum : integer :=  0 ;    -- sum of all inputs
     
     begin
 
@@ -201,7 +201,7 @@ begin
 
                 -- outputs(i) = weights(i) * inputs_sum + ( nb_inputs * offsets(i) ) 
                 loop_computing_outputs : for i in 0 to g_NB_OUTPUTS-1 loop      
-                    r_outputs(i)    <= to_signed( weights(i)*v_inputs_sum + (g_NB_INPUTS * offsets(i)) , p_DATA_WIDTH );
+                    r_outputs(i)    <= to_signed( r_weights(i) * v_inputs_sum + (g_NB_INPUTS * r_offsets(i)) , p_DATA_WIDTH );
                 end loop;
 
             end if;
