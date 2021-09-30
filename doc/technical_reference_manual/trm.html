@@ -1,0 +1,89 @@
+<h1>Neural Network Generator : Technical Reference Manual</h1>
+<h2>I/ Introduction</h2>
+
+VHDL naming conventions : 
+
+<pre>
+p_  : Shared Parameters
+r_  : Register signal
+c_  : Constant
+g_  : Generic 
+t_  : User-Defined Type
+v_  : Variables
+</pre>
+
+<h2>II/ Parameters</h2>
+
+<h3>A/ Overview</h3>
+
+<p>
+p_DATA_WIDTH is global for all project, so it is inside a package (parameters.vhd) shared between all IPs.
+All IPs’ IO must be std_logic. It helps with Vivado and GHDL / GTKWave.
+</p>
+
+<h2>III/ Generic Layer</h2>
+
+<h3>A/ Overview</h3>
+
+<pre>
+generic parameters : nb_inputs, nb_weights, mem_base
+I/O format example : NB_INPUTS=4, DATA_WIDTH=8
+
+inputs(31 downto 0)             31                                               0
+signed equivalent (7 downto 0)   7        0   7        0   7        0   7        0
+data index                            0            1            2          3
+</pre>
+
+
+<h3>B/ Computational details</h3>
+
+<pre>
+n   = inputs’length
+i_i = inputs[i]
+o_i = outputs[i]
+w_i = weights[i]
+b_i = offsets[i]
+
+o_i = [ w_i * (SUM inputs) ] + n*b_i  
+</pre>
+
+<h3>C/ Configuration detail</h3>
+<p>
+Each “data” (weight or offset) has its address inside the IP.
+They are configured through a minimalist protocol with only an addr bus and a data bus
+The data bus is p_DATA_WIDTH large, so the configuration bus configures one weight / offset at the time.
+
+As all layers are in the same address space (also shared with the PS7), they need to have an offset so they can distinguish incoming addresses. 
+
+Weights come first in the address space, followed by offsets.
+</p>
+
+<h2>IV/ Generic Fully-Connected Neural Network</h2>
+
+<h3>A/ Overview</h3>
+
+<img src="images/generic_fc_nn.jpeg">
+
+<h3>B/ Configuration</h3>
+
+<p>
+All generic layers inside the network are in the same address space.
+The AXI4L bus configuring those layers is connected to the PS7, so it belongs to its address space.
+(from 0x4000_0000 to 0x7FFF_FFF for AXI GP0 interface).
+The AXI interface is write-only. 
+
+As a consequence, layers must know their address space in the HDL code, so they can separate their configuration from their neighbour configurations. 
+
+Thus, we have one more generic parameters in the generic layers : 
+g_MEM_BASE
+</p>
+
+<h3>C/ Data</h3>
+
+<p>
+Data is flowing through the network using AXI Stream interfaces
+</p>
+
+
+
+

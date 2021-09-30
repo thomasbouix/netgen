@@ -1,0 +1,42 @@
+
+<h1>Neural Network Generator : User Guide</h1>
+
+
+<h2>I/ Purpose</h2>
+Development of a framework allowing quick implementation of a neural network on Zynq SoC.
+https://github.com/thomasbouix/netgen
+
+<h2>II/ System Architecture Configuration (host)</h2>
+
+The system architecture is configured before the implementation on an FPGA. The architecture defines a neural network with a given depth and width. 
+
+<h3>A/ Host machine programs</h3>
+
+<code>
+$ create_project --depth=3 --width=5,10,2 
+</code>
+
+<p>
+This command generates a Vivado project implementing a neural network with 3 layers with a width of 5, 10 and 2 neurons respectively. The programs modify the parameters via the TCL generation script. Then, it calls the top makefile which starts project generation, synthesis, implementation and bitstream. 
+</p>
+
+<h2>III/ Network Weights Configuration (target)</h2>
+
+<p>
+Once the system is implemented on target, the user can configure the network weights via a configuration file. Configuration data is then sent to the network IP inside PL via an AXI4F bus, converted to AXI4L with a Smart Interconnect. 
+</p>
+
+<h3>A/ Target machine program</h3>
+
+<code>
+$ configure_network file.conf
+</code>
+
+
+
+
+
+
+
+
+
