@@ -74,26 +74,23 @@ architecture rtl of generic_fc_nn is
             rstn                : in  std_logic;
 
             inputs              : in  std_logic_vector( g_NB_INPUTS  * p_DATA_WIDTH - 1 downto 0);
-            outputs             : out std_logic_vector( g_NB_OUTPUTS * p_DATA_WIDTH - 1 downto 0) := (others => '0');
+            outputs             : out std_logic_vector( g_NB_OUTPUTS * p_DATA_WIDTH - 1 downto 0)                           := (others => '0');
 
-            s_axi_awaddr        : in  std_logic_vector(31 downto 0);
-            s_axi_awprot        : in  std_logic_vector(2 downto 0);
-            s_axi_awvalid       : in  std_logic;
-            s_axi_awready       : out std_logic;
-            s_axi_wdata         : in  std_logic_vector(p_DATA_WIDTH - 1 downto 0);
-            s_axi_wstrb         : in  std_logic_vector((p_DATA_WIDTH / 8) - 1 downto 0);
-            s_axi_wvalid        : in  std_logic;
-            s_axi_wready        : out std_logic;
-            s_axi_bresp         : out std_logic_vector(1 downto 0);     
-            s_axi_bvalid        : out std_logic;
-            s_axi_bready        : in  std_logic
+            cfg_addr            : in  std_logic_vector(31 downto 0);
+            cfg_data            : in  std_logic_vector(p_DATA_WIDTH - 1 downto 0)
         );
 
     end component;
 
+    type T_CFG_SM                 is (PROCESSING_DATA, WRITING_RESP);                                                         -- axi state machine type
+    signal r_cfg_sm             : T_CFG_SM                                                                                  := PROCESSING_DATA;
+
     signal r_network_inputs     : std_logic_vector( g_NETWORK_INPUTS  * p_DATA_WIDTH - 1 downto 0)                          := (others => '0');
     signal r_network_outputs    : std_logic_vector( g_NETWORK_OUTPUTS * p_DATA_WIDTH - 1 downto 0)                          := (others => '0');
     signal r_layer_connections  : std_logic_vector( (g_NETWORK_LAYERS - 1) * g_NETWORK_HEIGHT * p_DATA_WIDTH - 1 downto 0)  := (others => '0');
+
+    signal cfg_addr             : std_logic_vector(31 downto 0)                                                             := (others => '0');
+    signal cfg_data             : std_logic_vector(p_DATA_WIDTH - 1 downto 0)                                               := (others => '0');
 
 begin
 
@@ -113,22 +110,11 @@ begin
                     rstn            => rstn,
                     
                     inputs          => r_network_inputs,
-
                     outputs         => r_layer_connections((g_NETWORK_LAYERS - 1) * g_NETWORK_HEIGHT * p_DATA_WIDTH - 1 downto 
                                                            (g_NETWORK_LAYERS - 1) * g_NETWORK_HEIGHT * p_DATA_WIDTH - p_DATA_WIDTH * g_NETWORK_HEIGHT),
 
-                    s_axi_awaddr    => s_axi_awaddr, 
-                    s_axi_awprot    => s_axi_awprot, 
-                    s_axi_awvalid   => s_axi_awvalid,
-                    s_axi_awready   => s_axi_awready,
-                    s_axi_wdata     => s_axi_wdata,  
-                    s_axi_wstrb     => s_axi_wstrb,  
-                    s_axi_wvalid    => s_axi_wvalid, 
-                    s_axi_wready    => s_axi_wready, 
-                    s_axi_bresp     => s_axi_bresp,  
-                    s_axi_bvalid    => s_axi_bvalid, 
-                    s_axi_bready    => s_axi_bready
-
+                    cfg_addr        => cfg_addr,
+                    cfg_data        => cfg_data
                 );
         end generate first_layer;
 
@@ -148,21 +134,11 @@ begin
 
                     inputs          => r_layer_connections((g_NETWORK_LAYERS - 1) * g_NETWORK_HEIGHT * p_DATA_WIDTH - 1 - p_DATA_WIDTH * g_NETWORK_HEIGHT * (i-1) downto 
                                                            (g_NETWORK_LAYERS - 1) * g_NETWORK_HEIGHT * p_DATA_WIDTH     - p_DATA_WIDTH * g_NETWORK_HEIGHT * (i)),
-
                     outputs         => r_layer_connections((g_NETWORK_LAYERS - 1) * g_NETWORK_HEIGHT * p_DATA_WIDTH - 1 - p_DATA_WIDTH * g_NETWORK_HEIGHT * (i)   downto 
                                                            (g_NETWORK_LAYERS - 1) * g_NETWORK_HEIGHT * p_DATA_WIDTH     - p_DATA_WIDTH * g_NETWORK_HEIGHT * (i+1)),
 
-                    s_axi_awaddr    => s_axi_awaddr, 
-                    s_axi_awprot    => s_axi_awprot, 
-                    s_axi_awvalid   => s_axi_awvalid,
-                    s_axi_awready   => s_axi_awready,
-                    s_axi_wdata     => s_axi_wdata,  
-                    s_axi_wstrb     => s_axi_wstrb,  
-                    s_axi_wvalid    => s_axi_wvalid, 
-                    s_axi_wready    => s_axi_wready, 
-                    s_axi_bresp     => s_axi_bresp,  
-                    s_axi_bvalid    => s_axi_bvalid, 
-                    s_axi_bready    => s_axi_bready
+                    cfg_addr        => cfg_addr,
+                    cfg_data        => cfg_data
                 );
         end generate middle_layers;
 
@@ -181,24 +157,65 @@ begin
 
                     inputs          => r_layer_connections((g_NETWORK_LAYERS - 1) * g_NETWORK_HEIGHT * p_DATA_WIDTH - 1 - p_DATA_WIDTH * g_NETWORK_HEIGHT * (i-1) downto 
                                                            (g_NETWORK_LAYERS - 1) * g_NETWORK_HEIGHT * p_DATA_WIDTH     - p_DATA_WIDTH * g_NETWORK_HEIGHT * (i)),
-
                     outputs         => r_network_outputs,
 
-                    s_axi_awaddr    => s_axi_awaddr, 
-                    s_axi_awprot    => s_axi_awprot, 
-                    s_axi_awvalid   => s_axi_awvalid,
-                    s_axi_awready   => s_axi_awready,
-                    s_axi_wdata     => s_axi_wdata,  
-                    s_axi_wstrb     => s_axi_wstrb,  
-                    s_axi_wvalid    => s_axi_wvalid, 
-                    s_axi_wready    => s_axi_wready, 
-                    s_axi_bresp     => s_axi_bresp,  
-                    s_axi_bvalid    => s_axi_bvalid, 
-                    s_axi_bready    => s_axi_bready
+                    cfg_addr        => cfg_addr,
+                    cfg_data        => cfg_data
                 );
         end generate last_layer;
 
     end generate layers;
+
+    -- process transfering axi signals to shared configuration bus
+    -- the configuration interface is write only : there are no read channels
+    p_configuration : process(clk) is
+
+    begin
+
+        if rising_edge(clk) then
+
+            if rstn = '0' then
+
+                s_axi_awready   <= '0';
+                s_axi_wready    <= '0';
+                s_axi_bvalid    <= '0';
+                s_axi_bresp     <= "00";
+
+                r_cfg_sm        <= PROCESSING_DATA;
+
+            else 
+                
+                case r_cfg_sm is 
+
+                    when PROCESSING_DATA =>
+
+                        if s_axi_awvalid = '1' and s_axi_wvalid = '1' then
+
+                            cfg_addr                    <= s_axi_awaddr;
+                            cfg_data                    <= s_axi_wdata;
+                            
+                            s_axi_awready               <= '1';
+                            s_axi_wready                <= '1';
+                            r_cfg_sm                    <= WRITING_RESP;
+
+                        end if;
+
+                    when WRITING_RESP =>
+
+                        s_axi_awready                   <= '0';
+                        s_axi_wready                    <= '0';
+                        s_axi_bvalid                    <= '1';
+                        s_axi_bresp                     <= "00";
+
+                        if s_axi_bready = '1' then
+                            s_axi_bvalid                <= '0';
+                            r_cfg_sm                    <= PROCESSING_DATA;
+                        end if;
+
+                end case;
+            end if;
+        end if;
+    end process; 
 
     -- receiving inputs through s_axis interface
     p_inputs_processing : process(clk) is
@@ -250,9 +267,6 @@ begin
 
 
     end process;
-
-
-
 
 end architecture;
 

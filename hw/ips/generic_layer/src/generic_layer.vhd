@@ -29,22 +29,11 @@ entity generic_layer is
         outputs             : out std_logic_vector( g_NB_OUTPUTS * p_DATA_WIDTH - 1 downto 0) := (others => '0');
 
         ----------------------------------------------------
-        ------- axi lite slave configuration interface -----
+        ------------ configuration interface ---------------
         ----------------------------------------------------
+        cfg_addr            : in  std_logic_vector(31 downto 0);
+        cfg_data            : in  std_logic_vector(p_DATA_WIDTH - 1 downto 0)
 
-        s_axi_awaddr        : in  std_logic_vector(31 downto 0);
-        s_axi_awprot        : in  std_logic_vector(2 downto 0);
-        s_axi_awvalid       : in  std_logic;
-        s_axi_awready       : out std_logic;
-
-        s_axi_wdata         : in  std_logic_vector(p_DATA_WIDTH - 1 downto 0);
-        s_axi_wstrb         : in  std_logic_vector((p_DATA_WIDTH / 8) - 1 downto 0);
-        s_axi_wvalid        : in  std_logic;
-        s_axi_wready        : out std_logic;
-
-        s_axi_bresp         : out std_logic_vector(1 downto 0);     
-        s_axi_bvalid        : out std_logic;
-        s_axi_bready        : in  std_logic
     );
 
 end entity;
@@ -53,9 +42,6 @@ end entity;
 
 architecture rtl of generic_layer is
 
-    type T_CFG_SM               is (WAIT_ADDR, WAIT_DATA, WRITE_RESP);                              -- axi state machine type
-
-    signal r_cfg_sm             : T_CFG_SM                                  := WAIT_ADDR;
     signal r_weights            : t_int_array(0 to g_NB_OUTPUTS)            := (others => 1);       -- weights[i] = 1
     signal r_offsets            : t_int_array(0 to g_NB_OUTPUTS)            := (others => 0);       -- offsets[i] = 0
 
@@ -89,9 +75,9 @@ begin
     -- the configuration interface is write only : there are no read channels
     p_configuration : process(clk) is
 
-        variable v_write_addr       : integer   :=  0 ;                   
-        variable v_weight_addr      : std_logic := '0';     -- the configuration addr is a weight addr
-        variable v_offset_addr      : std_logic := '0';     -- the configuration addr is an offset addr
+        variable v_weight_addr  : std_logic := '0';     -- configuring a weight
+        variable v_offset_addr  : std_logic := '0';     -- configuring an offset
+        variable v_write_addr   : integer   :=  0 ;     -- configuration addr as an integer
 
     begin
 
@@ -103,77 +89,37 @@ begin
                 v_weight_addr   := '0';
                 v_offset_addr   := '0';
 
-                s_axi_awready   <= '0';
-                s_axi_wready    <= '0';
-                s_axi_bvalid    <= '0';
-                s_axi_bresp     <= "00";
-
-                r_weights       <= (others => 2);
-                r_offsets       <= (others => 1);
-                r_cfg_sm        <= WAIT_ADDR;
+                r_weights       <= (others => 1);
+                r_offsets       <= (others => 0);
 
             else 
-                
-                case r_cfg_sm is 
 
-                    when WAIT_ADDR =>
+                v_write_addr        := to_integer(unsigned(cfg_addr));
 
-                        v_write_addr            :=  0 ;
-                        v_weight_addr           := '0';
-                        v_offset_addr           := '0';
+                if  v_write_addr >= c_WEIGHTS_MEM_BASE and v_write_addr <= c_WEIGHTS_MEM_END then       -- configuring a weight
 
-                        if s_axi_awvalid = '1' then                  
+                    v_weight_addr   := '1';
 
-                            v_write_addr        := to_integer(unsigned(s_axi_awaddr));
+                elsif v_write_addr >= c_OFFSETS_MEM_BASE and v_write_addr <= c_OFFSETS_MEM_END then     -- configuring an offset
 
-                            if  v_write_addr >= c_WEIGHTS_MEM_BASE and v_write_addr <= c_WEIGHTS_MEM_END then       -- configuring a weight
-                                v_weight_addr   := '1';
-                                s_axi_awready   <= '1';
-                                r_cfg_sm        <= WAIT_DATA;
+                    v_offset_addr   := '1';
 
-                            elsif v_write_addr >= c_OFFSETS_MEM_BASE and v_write_addr <= c_OFFSETS_MEM_END then     -- configuring an offset
-                                v_offset_addr   := '1';
-                                s_axi_awready   <= '1';
-                                r_cfg_sm        <= WAIT_DATA;
+                end if;
 
-                            else                                                                                    -- cfg addr is not in the ip address space
-                                r_cfg_sm        <= WAIT_ADDR;
-                            end if;
+                if v_weight_addr = '1' then
 
+                    r_weights(v_write_addr - g_MEM_BASE)  <= to_integer(signed(cfg_data)); 
 
-                        end if;
+                elsif v_offset_addr = '1' then
 
-                    when WAIT_DATA =>
+                    r_offsets(v_write_addr - g_MEM_BASE)  <= to_integer(signed(cfg_data)); 
 
-                        s_axi_awready                   <= '0';
-                        
-                        if s_axi_wvalid = '1' then
+                end if;
 
-                            if v_weight_addr = '1' then
-                               r_weights(v_write_addr)  <= to_integer(signed(s_axi_wdata)); 
-
-                            elsif v_offset_addr = '1' then
-                               r_offsets(v_write_addr)  <= to_integer(signed(s_axi_wdata)); 
-                            end if;
-
-                            s_axi_wready                <= '1';
-                            r_cfg_sm                    <= WRITE_RESP;
-                        end if;
-
-                    when WRITE_RESP =>
-
-                        s_axi_wready                    <= '0';
-                        s_axi_bvalid                    <= '1';
-                        s_axi_bresp                     <= "00";
-
-                        if s_axi_bready = '1' then
-                            s_axi_bvalid                <= '0';
-                            r_cfg_sm                    <= WAIT_ADDR;
-                        end if;
-
-                end case;
             end if;
+
         end if;
+
     end process; 
 
 
