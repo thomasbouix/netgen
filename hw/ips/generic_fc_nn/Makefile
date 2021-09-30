@@ -1,11 +1,12 @@
 # GHDL-GCC + VIVADO MAKEFILE
 
-IP_NAME=generic_layer
+IP_NAME=generic_fc_nn
 STOP_TIME=150ns
 
 # Elaboration of the simulation executable
 ghdl : 
 	ghdl -a --work=$(IP_NAME)_work ../parameters/parameters.vhd
+	ghdl -a --work=$(IP_NAME)_work ../generic_layer/src/generic_layer.vhd
 	ghdl -a --work=$(IP_NAME)_work src/$(IP_NAME).vhd
 	ghdl -a --work=$(IP_NAME)_work tb/$(IP_NAME)_tb.vhd
 	ghdl -e --work=$(IP_NAME)_work $(IP_NAME)_tb

@@ -7,8 +7,8 @@ use work.parameters.all;
 entity generic_layer_tb is 
 
     generic (
-        G_NB_INPUTS         : integer := 2;
-        G_NB_WEIGHTS        : integer := 2
+        g_NB_INPUTS         : integer := 2;
+        g_NB_OUTPUTS        : integer := 4
     );
 
 end entity;
@@ -20,28 +20,34 @@ architecture behavior of generic_layer_tb is
 
     signal clk              : std_logic;
     signal rstn             : std_logic;
-    signal inputs           : std_logic_vector(G_NB_INPUTS *DATA_WIDTH-1 downto 0)  := (others => '0');
-    signal outputs          : std_logic_vector(G_NB_WEIGHTS*DATA_WIDTH-1 downto 0)  := (others => '0');
-
+    signal inputs           : std_logic_vector(g_NB_INPUTS  * p_DATA_WIDTH - 1 downto 0)    := (others => '0');
+    signal outputs          : std_logic_vector(g_NB_OUTPUTS * p_DATA_WIDTH - 1 downto 0)    := (others => '0'); 
+    signal cfg_addr         : std_logic_vector(31 downto 0)                                 := (others => '0'); 
+    signal cfg_data         : std_logic_vector(p_DATA_WIDTH - 1 downto 0)                   := (others => '0'); 
 begin
 
     generic_layer : entity work.generic_layer 
 
         generic map ( 
-                      G_NB_INPUTS   => G_NB_INPUTS,
-                      G_NB_WEIGHTS  => G_NB_WEIGHTS 
-                    )
+            g_NB_INPUTS     => g_NB_INPUTS  ,
+            g_NB_OUTPUTS    => g_NB_OUTPUTS 
+        )
 
         port map    ( 
-                      clk           => clk,
-                      rstn          => rstn,
-                      inputs        => inputs,
-                      outputs       => outputs
-                    );
+            clk             => clk          ,
+            rstn            => rstn         ,
+            inputs          => inputs       ,
+            outputs         => outputs      ,
+            cfg_addr        => cfg_addr     ,
+            cfg_data        => cfg_data
+        );
 
-        inputs      <= (1 => '1',               -- inputs(0) = 2 
-                        15 => '1',              -- inputs(1) = -128
-                        others => '0');
+        inputs      <= (15      => '1',         -- first signed  = -64
+                        14      => '1',         -- 
+                        1       => '1',         -- second signed = 2
+                        others  => '0');
+
+        ---------------------
 
         p_reset : process begin
 

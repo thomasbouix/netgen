@@ -8,7 +8,7 @@ end design_tb;
 
 architecture behav of design_tb is
 
-    -- definition de la classe design_1
+    -- design_1 class definition
     component design_1 is
         port (
             clk         : in std_logic;
@@ -21,7 +21,7 @@ architecture behav of design_tb is
 
 begin
 
-    -- instanciation de l'objet design_1_i de la classe design_1
+    -- instanciation of object design_1_i of class design_1
     design_1_i: component design_1
         port map (
             clk         => clk,
