@@ -1,3 +1,3 @@
 # SIM
-Bancs de tests réservés au design complet.  
-A utiliser dans le simulateur Vivado.
+Testbench for the whole design.  
+To use in the Vivado simulator.  

@@ -3,9 +3,6 @@
 IP_NAME=generic_fc_nn
 STOP_TIME=150ns
 
-# Analyse + elaboration des sources dans $(IP_NAME)_work
-# Dans le code HDL, work fait donc reference a $(IP_NAME)_work dans les sources
-
 # Elaboration of the simulation executable
 ghdl : 
 	ghdl -a --work=$(IP_NAME)_work ../parameters/parameters.vhd

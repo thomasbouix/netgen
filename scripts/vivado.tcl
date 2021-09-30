@@ -1,6 +1,6 @@
 # *******************************************
 # Vivado project generation script
-# A appeler depuis le dossier framework racine
+# To call from framework's root directory
 # *******************************************
 
 set ROOT_DIR [pwd]
