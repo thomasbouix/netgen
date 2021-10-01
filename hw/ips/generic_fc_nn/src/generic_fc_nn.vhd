@@ -11,12 +11,6 @@ use work.parameters.all;
 
 entity generic_fc_nn is 
 
-    generic (
-        g_NETWORK_INPUTS    : integer                                   := p_NETWORK_INPUTS;
-        g_NETWORK_LAYERS    : integer                                   := p_NETWORK_LAYERS;    
-        g_NETWORK_WEIGHTS   : t_int_array(0 to p_NETWORK_LAYERS - 1)    := p_NETWORK_WEIGHTS
-    );
-
     port(
         clk                 : in  std_logic;
         rstn                : in  std_logic;
@@ -41,7 +35,7 @@ entity generic_fc_nn is
         ----------------------------------------------------
         s_axis_tvalid       : in  std_logic;
         s_axis_tlast        : in  std_logic;
-        s_axis_tdata        : in  std_logic_vector(p_DATA_WIDTH * g_NETWORK_INPUTS - 1 downto 0);       -- all inputs are sent in one cycle
+        s_axis_tdata        : in  std_logic_vector(p_DATA_WIDTH * p_NETWORK_INPUTS - 1 downto 0);       -- all inputs are sent in one cycle
         s_axis_tready       : out std_logic;
 
         ----------------------------------------------------
@@ -49,7 +43,7 @@ entity generic_fc_nn is
         ----------------------------------------------------
         m_axis_tvalid       : out std_logic;
         m_axis_tlast        : out std_logic;
-        m_axis_tdata        : out std_logic_vector(p_DATA_WIDTH * p_NETWORK_OUTPUTS - 1 downto 0);      -- all outputs are sent in one cycle
+        m_axis_tdata        : out std_logic_vector(p_DATA_WIDTH * p_NETWORK_OUTPUTS) - 1 downto 0);
         m_axis_tready       : in  std_logic 
 
     );
@@ -65,8 +59,8 @@ architecture rtl of generic_fc_nn is
     pure function f_nb_connexions return integer is
         variable v_size : integer := 0;
     begin
-        for i in 0 to g_NETWORK_LAYERS - 2 loop
-            v_size := v_size + g_NETWORK_WEIGHTS(i) * p_DATA_WIDTH;
+        for i in 0 to p_NETWORK_LAYERS - 2 loop
+            v_size := v_size + p_NETWORK_WEIGHTS(i) * p_DATA_WIDTH;
         end loop;
         return v_size;
     end function; 
@@ -78,7 +72,7 @@ architecture rtl of generic_fc_nn is
         variable v_output_index : integer := f_nb_connexions - 1;                                       -- max index of r_layer_connexions
     begin
         for i in 0 to layer_index loop
-            v_output_index := v_output_index - p_DATA_WIDTH * g_NETWORK_WEIGHTS(i);
+            v_output_index := v_output_index - p_DATA_WIDTH * p_NETWORK_WEIGHTS(i);
         end loop;
         return v_output_index + 1;
     end function;
@@ -86,7 +80,7 @@ architecture rtl of generic_fc_nn is
     -- computes the index of the first input connexion of a layer
     -- ex : ML1.inputs = [f_first_input_index(i) downto f_last_output_index(1) ]
     -- cannot be used for the first layer FL0
-    pure function f_first_input_index (layer_index : integer range 1 to g_NETWORK_LAYERS - 1) 
+    pure function f_first_input_index (layer_index : integer range 1 to p_NETWORK_LAYERS - 1) 
     return integer is 
         variable v_input_index : integer := f_nb_connexions - 1;                                        -- max index of r_layer_connexions
     begin
@@ -94,7 +88,7 @@ architecture rtl of generic_fc_nn is
             return v_input_index;
         else
             for i in 2 to layer_index loop
-                v_input_index := v_input_index - p_DATA_WIDTH * g_NETWORK_WEIGHTS(i-2);
+                v_input_index := v_input_index - p_DATA_WIDTH * p_NETWORK_WEIGHTS(i-2);
             end loop;
         end if;
         return v_input_index;
@@ -105,7 +99,7 @@ architecture rtl of generic_fc_nn is
         variable v_addr : integer := 16#4000_0000#;
     begin
         for i in 0 to index loop
-            v_addr := v_addr + 2 * (g_NETWORK_WEIGHTS(i));
+            v_addr := v_addr + 2 * (p_NETWORK_WEIGHTS(i));
         end loop;
         return v_addr;
     end function;
@@ -115,7 +109,7 @@ architecture rtl of generic_fc_nn is
     constant c_NB_CONNEXIONS    : integer                                                               := f_nb_connexions;
 
     signal r_cfg_sm             : T_CFG_SM                                                              := PROCESSING_DATA;
-    signal r_network_inputs     : std_logic_vector(g_NETWORK_INPUTS  * p_DATA_WIDTH - 1 downto 0)       := (others => '0');
+    signal r_network_inputs     : std_logic_vector(p_NETWORK_INPUTS  * p_DATA_WIDTH - 1 downto 0)       := (others => '0');
     signal r_network_outputs    : std_logic_vector(p_NETWORK_OUTPUTS * p_DATA_WIDTH - 1 downto 0)       := (others => '0');
     signal r_layer_connexions   : std_logic_vector(c_NB_CONNEXIONS -  1                 downto 0)       := (others => '0');
     signal cfg_addr             : std_logic_vector(31 downto 0)                                         := (others => '0');
@@ -141,37 +135,16 @@ architecture rtl of generic_fc_nn is
 
     end component;
 
-    -- signal max_i : integer;
-    -- signal last0 : integer;
-    -- signal last1 : integer;
-    -- signal last2 : integer;
-    -- signal last3 : integer;
-    -- signal first1 : integer;
-    -- signal first2 : integer;
-    -- signal first3 : integer;
-    -- signal first4 : integer;
-
 begin
 
-        -- max_i <= c_NB_CONNEXIONS - 1;
-        -- last0 <= f_last_output_index(0);
-        -- last1 <= f_last_output_index(1);
-        -- last2 <= f_last_output_index(2);
-        -- last3 <= f_last_output_index(3);
-
-        -- first1 <= f_first_input_index(1);
-        -- first2 <= f_first_input_index(2);
-        -- first3 <= f_first_input_index(3);
-        -- first4 <= f_first_input_index(4);
-
-    layers : for i in 0 to g_NETWORK_LAYERS - 1 generate
+    layers : for i in 0 to p_NETWORK_LAYERS - 1 generate
         
         first_layer : if i = 0 generate
 
             FL : generic_layer
                 generic map (
-                    g_NB_INPUTS     => g_NETWORK_INPUTS,
-                    g_NB_OUTPUTS    => g_NETWORK_WEIGHTS(0),
+                    g_NB_INPUTS     => p_NETWORK_INPUTS,
+                    g_NB_OUTPUTS    => p_NETWORK_WEIGHTS(0),
                     g_MEM_BASE      => f_compute_layer_addr(0)
                 )
 
@@ -187,13 +160,13 @@ begin
                 );
         end generate first_layer;
 
-        middle_layers : if i > 0 and i < g_NETWORK_LAYERS - 1 generate
+        middle_layers : if i > 0 and i < p_NETWORK_LAYERS - 1 generate
 
             ML : generic_layer 
                 
                 generic map (
-                    g_NB_INPUTS     => g_NETWORK_WEIGHTS(i-1),
-                    g_NB_OUTPUTS    => g_NETWORK_WEIGHTS(i),
+                    g_NB_INPUTS     => p_NETWORK_WEIGHTS(i-1),
+                    g_NB_OUTPUTS    => p_NETWORK_WEIGHTS(i),
                     g_MEM_BASE      => f_compute_layer_addr(i)
                 )
 
@@ -209,11 +182,11 @@ begin
                 );
         end generate middle_layers;
 
-        last_layer : if i = g_NETWORK_LAYERS - 1 generate
+        last_layer : if i = p_NETWORK_LAYERS - 1 generate
 
             LL : generic_layer
                 generic map (
-                    g_NB_INPUTS     => g_NETWORK_WEIGHTS(g_NETWORK_LAYERS - 2),
+                    g_NB_INPUTS     => p_NETWORK_WEIGHTS(p_NETWORK_LAYERS - 2),
                     g_NB_OUTPUTS    => p_NETWORK_OUTPUTS,
                     g_MEM_BASE      => f_compute_layer_addr(i)
                 )

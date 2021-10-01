@@ -5,13 +5,6 @@ library work;
 use work.parameters.all;
 
 entity generic_fc_nn_tb is 
-
-    generic (
-        g_NETWORK_INPUTS    : integer               := 2;                  -- number of inputs of the first layer
-        g_NETWORK_LAYERS    : integer               := 5;                  -- number of layers inside the network
-        g_NETWORK_WEIGHTS   : t_int_array(0 to 4)   := (4, 3, 2, 4, 4)     -- number of weights of each layer
-    );
-
 end entity;
 
 architecture behavior of generic_fc_nn_tb is 
@@ -36,7 +29,7 @@ architecture behavior of generic_fc_nn_tb is
 
     signal s_axis_tvalid    : std_logic;
     signal s_axis_tlast     : std_logic;
-    signal s_axis_tdata     : std_logic_vector(p_DATA_WIDTH * g_NETWORK_INPUTS - 1 downto 0);       
+    signal s_axis_tdata     : std_logic_vector(p_DATA_WIDTH * p_NETWORK_INPUTS - 1 downto 0);       
     signal s_axis_tready    : std_logic;
 
     signal m_axis_tvalid    : std_logic;
@@ -47,12 +40,6 @@ architecture behavior of generic_fc_nn_tb is
 begin
 
     generic_fc_nn : entity work.generic_fc_nn 
-
-        generic map ( 
-            g_NETWORK_INPUTS    => g_NETWORK_INPUTS ,
-            g_NETWORK_WEIGHTS   => g_NETWORK_WEIGHTS,     
-            g_NETWORK_LAYERS    => g_NETWORK_LAYERS
-        )
 
         port map    ( 
             clk                 => clk              ,
