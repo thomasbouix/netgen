@@ -13,9 +13,8 @@ entity generic_fc_nn is
 
     generic (
         g_NETWORK_INPUTS    : integer                                   := p_NETWORK_INPUTS;
-        g_NETWORK_OUTPUTS   : integer                                   := p_NETWORK_OUTPUTS;   
         g_NETWORK_LAYERS    : integer                                   := p_NETWORK_LAYERS;    
-        g_NETWORK_HEIGHTS   : t_int_array(0 to p_NETWORK_LAYERS - 1)    := p_NETWORK_HEIGHTS
+        g_NETWORK_WEIGHTS   : t_int_array(0 to p_NETWORK_LAYERS - 1)    := p_NETWORK_WEIGHTS
     );
 
     port(
@@ -50,7 +49,7 @@ entity generic_fc_nn is
         ----------------------------------------------------
         m_axis_tvalid       : out std_logic;
         m_axis_tlast        : out std_logic;
-        m_axis_tdata        : out std_logic_vector(p_DATA_WIDTH * g_NETWORK_OUTPUTS - 1 downto 0);      -- all outputs are sent in one cycle
+        m_axis_tdata        : out std_logic_vector(p_DATA_WIDTH * p_NETWORK_OUTPUTS - 1 downto 0);      -- all outputs are sent in one cycle
         m_axis_tready       : in  std_logic 
 
     );
@@ -59,34 +58,66 @@ end entity;
 
 architecture rtl of generic_fc_nn is
 
-    -- computes how many internal connexions are needed to connect all layers
-    -- we count every layer outputs exept for the last layer, whose outputs are connected to the network outputs
-    pure function f_compute_connexions return integer is
-        variable v_size         : integer := 0;
+    -- computes the number of internal connexions between all layers
+    -- ex : network = 2 -> 3 -> 4 -> 5
+    -- ex : number of interconnected weights = 2 + 3 + 4 = 9
+    -- ex : number of connexions = 9 * data_width 
+    pure function f_nb_connexions return integer is
+        variable v_size : integer := 0;
     begin
         for i in 0 to g_NETWORK_LAYERS - 2 loop
-            v_size := v_size + g_NETWORK_HEIGHTS(i);
+            v_size := v_size + g_NETWORK_WEIGHTS(i) * p_DATA_WIDTH;
         end loop;
         return v_size;
     end function; 
 
-    -- computes the base addr of a layer in the newtork
-    pure function f_compute_layer_addr (index : integer) return integer is 
-        variable v_addr         : integer := 16#4000_0000#;
+    -- computes the index of the last output connexion of a layer
+    -- ex : FL0.outputs = [MAX downto f_last_output_index(0) ]
+    -- ex : ML1.outputs = [FL0.last - 1 downto f_last_output_index(1) ]
+    pure function f_last_output_index (layer_index : integer) return integer is 
+        variable v_output_index : integer := f_nb_connexions - 1;                                       -- max index of r_layer_connexions
     begin
-        for i in 0 to index loop
-            v_addr := v_addr + 2 * (g_NETWORK_HEIGHTS(i));
+        for i in 0 to layer_index loop
+            v_output_index := v_output_index - p_DATA_WIDTH * g_NETWORK_WEIGHTS(i);
         end loop;
+        return v_output_index + 1;
     end function;
 
+    -- computes the index of the first input connexion of a layer
+    -- ex : ML1.inputs = [f_first_input_index(i) downto f_last_output_index(1) ]
+    -- cannot be used for the first layer FL0
+    pure function f_first_input_index (layer_index : integer range 1 to g_NETWORK_LAYERS - 1) 
+    return integer is 
+        variable v_input_index : integer := f_nb_connexions - 1;                                        -- max index of r_layer_connexions
+    begin
+        if layer_index = 1 then                                                                         
+            return v_input_index;
+        else
+            for i in 2 to layer_index loop
+                v_input_index := v_input_index - p_DATA_WIDTH * g_NETWORK_WEIGHTS(i-2);
+            end loop;
+        end if;
+        return v_input_index;
+    end function;
+
+    -- computes the base addr of a layer in the newtork
+    pure function f_compute_layer_addr (index : integer) return integer is 
+        variable v_addr : integer := 16#4000_0000#;
+    begin
+        for i in 0 to index loop
+            v_addr := v_addr + 2 * (g_NETWORK_WEIGHTS(i));
+        end loop;
+        return v_addr;
+    end function;
+    
     type T_CFG_SM                 is (PROCESSING_DATA, WRITING_RESP);                                   -- axi state machine type
 
-    constant c_NB_connexions    : integer                                                               := f_compute_connexions;
+    constant c_NB_CONNEXIONS    : integer                                                               := f_nb_connexions;
 
     signal r_cfg_sm             : T_CFG_SM                                                              := PROCESSING_DATA;
     signal r_network_inputs     : std_logic_vector(g_NETWORK_INPUTS  * p_DATA_WIDTH - 1 downto 0)       := (others => '0');
-    signal r_network_outputs    : std_logic_vector(g_NETWORK_OUTPUTS * p_DATA_WIDTH - 1 downto 0)       := (others => '0');
-    signal r_layer_connexions   : std_logic_vector(c_NB_CONNEXIONS   * p_DATA_WIDTH - 1 downto 0)       := (others => '0');
+    signal r_network_outputs    : std_logic_vector(p_NETWORK_OUTPUTS * p_DATA_WIDTH - 1 downto 0)       := (others => '0');
+    signal r_layer_connexions   : std_logic_vector(c_NB_CONNEXIONS -  1                 downto 0)       := (others => '0');
     signal cfg_addr             : std_logic_vector(31 downto 0)                                         := (others => '0');
     signal cfg_data             : std_logic_vector(p_DATA_WIDTH - 1 downto 0)                           := (others => '0');
 
@@ -110,7 +141,28 @@ architecture rtl of generic_fc_nn is
 
     end component;
 
+    -- signal max_i : integer;
+    -- signal last0 : integer;
+    -- signal last1 : integer;
+    -- signal last2 : integer;
+    -- signal last3 : integer;
+    -- signal first1 : integer;
+    -- signal first2 : integer;
+    -- signal first3 : integer;
+    -- signal first4 : integer;
+
 begin
+
+        -- max_i <= c_NB_CONNEXIONS - 1;
+        -- last0 <= f_last_output_index(0);
+        -- last1 <= f_last_output_index(1);
+        -- last2 <= f_last_output_index(2);
+        -- last3 <= f_last_output_index(3);
+
+        -- first1 <= f_first_input_index(1);
+        -- first2 <= f_first_input_index(2);
+        -- first3 <= f_first_input_index(3);
+        -- first4 <= f_first_input_index(4);
 
     layers : for i in 0 to g_NETWORK_LAYERS - 1 generate
         
@@ -119,7 +171,7 @@ begin
             FL : generic_layer
                 generic map (
                     g_NB_INPUTS     => g_NETWORK_INPUTS,
-                    g_NB_OUTPUTS    => g_NETWORK_HEIGHTS(0),
+                    g_NB_OUTPUTS    => g_NETWORK_WEIGHTS(0),
                     g_MEM_BASE      => f_compute_layer_addr(0)
                 )
 
@@ -128,8 +180,7 @@ begin
                     rstn            => rstn,
                     
                     inputs          => r_network_inputs,
-                    outputs         => r_layer_connexions( c_NB_CONNEXIONS * p_DATA_WIDTH - 1 downto 
-                                                           c_NB_CONNEXIONS * p_DATA_WIDTH - p_DATA_WIDTH * g_NETWORK_HEIGHTS(0) ),
+                    outputs         => r_layer_connexions(c_NB_CONNEXIONS - 1 downto f_last_output_index(0)),
 
                     cfg_addr        => cfg_addr,
                     cfg_data        => cfg_data
@@ -141,8 +192,8 @@ begin
             ML : generic_layer 
                 
                 generic map (
-                    g_NB_INPUTS     => g_NETWORK_HEIGHTS(i-1),
-                    g_NB_OUTPUTS    => g_NETWORK_HEIGHTS(i),
+                    g_NB_INPUTS     => g_NETWORK_WEIGHTS(i-1),
+                    g_NB_OUTPUTS    => g_NETWORK_WEIGHTS(i),
                     g_MEM_BASE      => f_compute_layer_addr(i)
                 )
 
@@ -150,11 +201,9 @@ begin
                     clk             => clk,  
                     rstn            => rstn,
 
-                    inputs          => r_layer_connexions(c_NB_CONNEXIONS - 1 - p_DATA_WIDTH * g_NETWORK_HEIGHTS(i-1)  * (i-1) downto 
-                                                          c_NB_CONNEXIONS     - p_DATA_WIDTH * g_NETWORK_HEIGHTS(i)    * (i)),
-                    outputs         => r_layer_connexions(c_NB_CONNEXIONS - 1 - p_DATA_WIDTH * g_NETWORK_HEIGHTS(i)    * (i)   downto 
-                                                          c_NB_CONNEXIONS     - p_DATA_WIDTH * g_NETWORK_HEIGHTS(i+1)  * (i+1)),
-
+                    inputs          => r_layer_connexions(f_first_input_index(i)   downto f_last_output_index(i-1)),        
+                    outputs         => r_layer_connexions(f_first_input_index(i+1) downto f_last_output_index(i)),          
+                    
                     cfg_addr        => cfg_addr,
                     cfg_data        => cfg_data
                 );
@@ -164,8 +213,8 @@ begin
 
             LL : generic_layer
                 generic map (
-                    g_NB_INPUTS     => g_NETWORK_HEIGHTS(g_NETWORK_LAYERS - 1),
-                    g_NB_OUTPUTS    => g_NETWORK_OUTPUTS,
+                    g_NB_INPUTS     => g_NETWORK_WEIGHTS(g_NETWORK_LAYERS - 2),
+                    g_NB_OUTPUTS    => p_NETWORK_OUTPUTS,
                     g_MEM_BASE      => f_compute_layer_addr(i)
                 )
 
@@ -173,8 +222,7 @@ begin
                     clk             => clk,  
                     rstn            => rstn,
 
-                    inputs          => r_layer_connexions(c_NB_CONNEXIONS * p_DATA_WIDTH - 1 - p_DATA_WIDTH * g_NETWORK_HEIGHTS(i-1) * (i-1) downto 
-                                                          c_NB_CONNEXIONS * p_DATA_WIDTH     - p_DATA_WIDTH * g_NETWORK_HEIGHTS(i)   * (i)),
+                    inputs          => r_layer_connexions(f_first_input_index(i)   downto f_last_output_index(i-1)),        
                     outputs         => r_network_outputs,
 
                     cfg_addr        => cfg_addr,

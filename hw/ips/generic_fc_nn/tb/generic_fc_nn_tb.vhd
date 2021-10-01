@@ -7,10 +7,9 @@ use work.parameters.all;
 entity generic_fc_nn_tb is 
 
     generic (
-        g_NETWORK_INPUTS    : integer := 2;     -- number of inputs of the first layer
-        g_NETWORK_OUTPUTS   : integer := 4;     -- number of outputs of the last layer
-        g_NETWORK_HEIGHT    : integer := 3;     -- number of inputs / outputs of middle layers
-        g_NETWORK_LAYERS    : integer := 5      -- number of layers inside the network
+        g_NETWORK_INPUTS    : integer               := 2;                  -- number of inputs of the first layer
+        g_NETWORK_LAYERS    : integer               := 5;                  -- number of layers inside the network
+        g_NETWORK_WEIGHTS   : t_int_array(0 to 4)   := (4, 3, 2, 4, 4)     -- number of weights of each layer
     );
 
 end entity;
@@ -42,7 +41,7 @@ architecture behavior of generic_fc_nn_tb is
 
     signal m_axis_tvalid    : std_logic;
     signal m_axis_tlast     : std_logic;
-    signal m_axis_tdata     : std_logic_vector(p_DATA_WIDTH * g_NETWORK_OUTPUTS - 1 downto 0);     
+    signal m_axis_tdata     : std_logic_vector(p_DATA_WIDTH * p_NETWORK_OUTPUTS - 1 downto 0);     
     signal m_axis_tready    : std_logic;
 
 begin
@@ -51,8 +50,7 @@ begin
 
         generic map ( 
             g_NETWORK_INPUTS    => g_NETWORK_INPUTS ,
-            g_NETWORK_OUTPUTS   => g_NETWORK_OUTPUTS,
-            g_NETWORK_HEIGHT    => g_NETWORK_HEIGHT ,     
+            g_NETWORK_WEIGHTS   => g_NETWORK_WEIGHTS,     
             g_NETWORK_LAYERS    => g_NETWORK_LAYERS
         )
 
