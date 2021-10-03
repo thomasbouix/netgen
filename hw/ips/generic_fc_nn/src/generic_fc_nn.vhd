@@ -43,7 +43,7 @@ entity generic_fc_nn is
         ----------------------------------------------------
         m_axis_tvalid       : out std_logic;
         m_axis_tlast        : out std_logic;
-        m_axis_tdata        : out std_logic_vector(p_DATA_WIDTH * p_NETWORK_OUTPUTS) - 1 downto 0);
+        m_axis_tdata        : out std_logic_vector(p_DATA_WIDTH * p_NETWORK_OUTPUTS - 1 downto 0);
         m_axis_tready       : in  std_logic 
 
     );
@@ -54,13 +54,13 @@ architecture rtl of generic_fc_nn is
 
     -- computes the number of internal connexions between all layers
     -- ex : network = 2 -> 3 -> 4 -> 5
-    -- ex : number of interconnected weights = 2 + 3 + 4 = 9
+    -- ex : number of interconnected neurons = 2 + 3 + 4 = 9
     -- ex : number of connexions = 9 * data_width 
     pure function f_nb_connexions return integer is
         variable v_size : integer := 0;
     begin
         for i in 0 to p_NETWORK_LAYERS - 2 loop
-            v_size := v_size + p_NETWORK_WEIGHTS(i) * p_DATA_WIDTH;
+            v_size := v_size + p_NETWORK_NEURONS(i) * p_DATA_WIDTH;
         end loop;
         return v_size;
     end function; 
@@ -72,7 +72,7 @@ architecture rtl of generic_fc_nn is
         variable v_output_index : integer := f_nb_connexions - 1;                                       -- max index of r_layer_connexions
     begin
         for i in 0 to layer_index loop
-            v_output_index := v_output_index - p_DATA_WIDTH * p_NETWORK_WEIGHTS(i);
+            v_output_index := v_output_index - p_DATA_WIDTH * p_NETWORK_NEURONS(i);
         end loop;
         return v_output_index + 1;
     end function;
@@ -88,7 +88,7 @@ architecture rtl of generic_fc_nn is
             return v_input_index;
         else
             for i in 2 to layer_index loop
-                v_input_index := v_input_index - p_DATA_WIDTH * p_NETWORK_WEIGHTS(i-2);
+                v_input_index := v_input_index - p_DATA_WIDTH * p_NETWORK_NEURONS(i-2);
             end loop;
         end if;
         return v_input_index;
@@ -98,8 +98,15 @@ architecture rtl of generic_fc_nn is
     pure function f_compute_layer_addr (index : integer) return integer is 
         variable v_addr : integer := 16#4000_0000#;
     begin
-        for i in 0 to index loop
-            v_addr := v_addr + 2 * (p_NETWORK_WEIGHTS(i));
+
+        if index = 0 then
+            return v_addr;
+        end if;
+
+        for i in 1 to index loop
+            -- base_addr(layer i) = base_addr(layer i-1) + range(layer i-1)
+            -- range(layer) := nb_weights = nb_inputs * nb_outputs             + nb_bias = nb_outputs
+            v_addr := v_addr + p_NETWORK_NEURONS(i-1) * p_NETWORK_NEURONS(i-1) + p_NETWORK_NEURONS(i-1);    
         end loop;
         return v_addr;
     end function;
@@ -144,7 +151,7 @@ begin
             FL : generic_layer
                 generic map (
                     g_NB_INPUTS     => p_NETWORK_INPUTS,
-                    g_NB_OUTPUTS    => p_NETWORK_WEIGHTS(0),
+                    g_NB_OUTPUTS    => p_NETWORK_NEURONS(0),
                     g_MEM_BASE      => f_compute_layer_addr(0)
                 )
 
@@ -165,8 +172,8 @@ begin
             ML : generic_layer 
                 
                 generic map (
-                    g_NB_INPUTS     => p_NETWORK_WEIGHTS(i-1),
-                    g_NB_OUTPUTS    => p_NETWORK_WEIGHTS(i),
+                    g_NB_INPUTS     => p_NETWORK_NEURONS(i-1),
+                    g_NB_OUTPUTS    => p_NETWORK_NEURONS(i),
                     g_MEM_BASE      => f_compute_layer_addr(i)
                 )
 
@@ -186,7 +193,7 @@ begin
 
             LL : generic_layer
                 generic map (
-                    g_NB_INPUTS     => p_NETWORK_WEIGHTS(p_NETWORK_LAYERS - 2),
+                    g_NB_INPUTS     => p_NETWORK_NEURONS(p_NETWORK_LAYERS - 2),
                     g_NB_OUTPUTS    => p_NETWORK_OUTPUTS,
                     g_MEM_BASE      => f_compute_layer_addr(i)
                 )
@@ -195,7 +202,7 @@ begin
                     clk             => clk,  
                     rstn            => rstn,
 
-                    inputs          => r_layer_connexions(f_first_input_index(i)   downto f_last_output_index(i-1)),        
+                    inputs          => r_layer_connexions(f_first_input_index(i) downto f_last_output_index(i-1)),        
                     outputs         => r_network_outputs,
 
                     cfg_addr        => cfg_addr,
@@ -206,7 +213,7 @@ begin
     end generate layers;
 
     -- process transfering axi signals to shared configuration bus
-    -- the configuration interface is write only : there are no read channels
+    -- the axi lite configuration interface is write only : there are no read channels
     p_configuration : process(clk) is
 
     begin
