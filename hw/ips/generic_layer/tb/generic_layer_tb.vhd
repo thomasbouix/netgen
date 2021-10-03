@@ -8,7 +8,7 @@ entity generic_layer_tb is
 
     generic (
         g_NB_INPUTS         : integer := 2;
-        g_NB_OUTPUTS        : integer := 4
+        g_NB_OUTPUTS        : integer := 1
     );
 
 end entity;
@@ -30,7 +30,8 @@ begin
 
         generic map ( 
             g_NB_INPUTS     => g_NB_INPUTS  ,
-            g_NB_OUTPUTS    => g_NB_OUTPUTS 
+            g_NB_OUTPUTS    => g_NB_OUTPUTS ,
+            g_MEM_BASE      => 16#4000_0000#
         )
 
         port map    ( 

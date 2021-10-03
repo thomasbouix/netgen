@@ -25,8 +25,12 @@ All IPs’ IO must be std_logic. It helps with Vivado and GHDL / GTKWave.
 
 <h3>A/ Overview</h3>
 
+<img src="images/generic_layer.jpg">
+
+
+<h3>B/ Index details</h3>
+
 <pre>
-generic parameters : nb_inputs, nb_weights, mem_base
 I/O format example : NB_INPUTS=4, DATA_WIDTH=8
 
 inputs(31 downto 0)             31                                               0
@@ -34,35 +38,22 @@ signed equivalent (7 downto 0)   7        0   7        0   7        0   7       
 data index                            0            1            2          3
 </pre>
 
-
-<h3>B/ Computational details</h3>
-
-<pre>
-n   = inputs’length
-i_i = inputs[i]
-o_i = outputs[i]
-w_i = weights[i]
-b_i = offsets[i]
-
-o_i = [ w_i * (SUM inputs) ] + n*b_i  
-</pre>
-
 <h3>C/ Configuration detail</h3>
 <p>
-Each “data” (weight or offset) has its address inside the IP.
+Each “data” (weight or bias) has its address inside the IP.
 They are configured through a minimalist protocol with only an addr bus and a data bus
-The data bus is p_DATA_WIDTH large, so the configuration bus configures one weight / offset at the time.
+The data bus is p_DATA_WIDTH large, so the configuration bus configures one weight / bias at the time.
 
-As all layers are in the same address space (also shared with the PS7), they need to have an offset so they can distinguish incoming addresses. 
+As all layers are in the same address space (also shared with the PS7), they need to have an bias so they can distinguish incoming addresses. 
 
-Weights come first in the address space, followed by offsets.
+Weights come first in the address space, followed by bias.
 </p>
 
 <h2>IV/ Generic Fully-Connected Neural Network</h2>
 
 <h3>A/ Overview</h3>
 
-<img src="images/generic_fc_nn.jpeg">
+<img src="images/generic_fc_nn.jpg">
 
 <h3>B/ Configuration</h3>
 
