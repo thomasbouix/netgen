@@ -17,8 +17,8 @@ v_  : Variables
 <h3>A/ Overview</h3>
 
 <p>
-p_DATA_WIDTH is global for all project, so it is inside a package (parameters.vhd) shared between all IPs.
 All IPs’ IO must be std_logic. It helps with Vivado and GHDL / GTKWave.
+p_DATA_WIDTH is global for all project, so it is inside a package (parameters.vhd) shared between all IPs.
 </p>
 
 <h2>III/ Generic Layer</h2>
@@ -40,11 +40,11 @@ data index                            0            1            2          3
 
 <h3>C/ Configuration detail</h3>
 <p>
-Each “data” (weight or bias) has its address inside the IP.
-They are configured through a minimalist protocol with only an addr bus and a data bus
+Each “data” (weight or bias) has its onw address inside the IP (the address is independent of the data_width).  
+They are configured through a minimalist protocol with only an addr and a data signal.  
 The data bus is p_DATA_WIDTH large, so the configuration bus configures one weight / bias at the time.
 
-As all layers are in the same address space (also shared with the PS7), they need to have an bias so they can distinguish incoming addresses. 
+As all layers are in the same address space (also shared with the PS7), they need to have an offset so they can distinguish incoming addresses. 
 
 Weights come first in the address space, followed by bias.
 </p>
@@ -54,6 +54,9 @@ Weights come first in the address space, followed by bias.
 <h3>A/ Overview</h3>
 
 <img src="images/generic_fc_nn.jpg">
+
+<p>
+</p>
 
 <h3>B/ Configuration</h3>
 

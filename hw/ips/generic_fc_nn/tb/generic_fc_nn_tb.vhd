@@ -1,5 +1,6 @@
 library ieee;
 use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
 
 library work;
 use work.parameters.all;
@@ -9,8 +10,7 @@ end entity;
 
 architecture behavior of generic_fc_nn_tb is 
 
-    constant CLOCK_PERIOD_2 : time := 5 ns;
-    constant CLOCK_PERIOD   : time := 2 * CLOCK_PERIOD_2;
+    constant CLOCK_PERIOD   : time := 10 ns;
 
     signal clk              : std_logic;
     signal rstn             : std_logic;
@@ -65,23 +65,106 @@ begin
             m_axis_tready       => m_axis_tready
         );
 
-        p_reset : process begin
+        p_clock : process begin
+            clk     <= '0'; wait for CLOCK_PERIOD / 2;
+            clk     <= '1'; wait for CLOCK_PERIOD / 2;
+        end process;     
 
-            rstn    <= '0';
-            wait for 5 * CLOCK_PERIOD;
-            rstn    <= '1';
+        p_reset : process begin
+            rstn    <= '0'; wait for 5 * CLOCK_PERIOD;
+            rstn    <= '1'; wait;
+        end process;
+
+        p_input_data : process begin
+            wait until rstn = '1';
+            s_axis_tdata    <= (8       => '1',         -- input[0] = 1
+                                0       => '1',         -- input[1] = 1
+                                others  => '0');
+            s_axis_tvalid   <= '1';
+            wait;
+        end process;
+
+        p_configuration : process begin
+
+            s_axi_awaddr            <= (others => '0');
+            s_axi_awprot            <= "000";
+            s_axi_awvalid           <= '0';
+
+            s_axi_wdata             <= (others => '0');
+            s_axi_wstrb             <= "0"; 
+            s_axi_wvalid            <= '0'; 
+
+            s_axi_bready            <= '0'; 
+
+            wait until rstn = '1';
+
+            wait for 6*CLOCK_PERIOD;
+
+            -- L0.w00 = 2
+            s_axi_awaddr            <= std_logic_vector(to_unsigned(16#4000_0000#, 32));
+            s_axi_awvalid           <= '1';
+            s_axi_wdata             <= "00000010";
+            s_axi_wvalid            <= '1';
+
+            wait on s_axi_awready, s_axi_wready;
+
+            if s_axi_awready = '1' and s_axi_wready = '1' then 
+                s_axi_awvalid       <= '0';
+                s_axi_wvalid        <= '0';
+            elsif s_axi_awready = '1' then
+                s_axi_awvalid       <= '0';
+                wait on s_axi_wready;
+                s_axi_wvalid        <= '0';
+            elsif s_axi_wready = '1' then
+                s_axi_wvalid        <= '0';
+                wait on s_axi_awready;
+                s_axi_awvalid       <= '0';
+            end if;
+
+            wait on s_axi_bvalid;
+
+            if s_axi_bvalid = '1' then 
+                s_axi_bready <= '1';
+                wait for 2 * CLOCK_PERIOD;
+                s_axi_bready <= '0';
+            end if;
+
+            wait for 6*CLOCK_PERIOD;
+
+            -- L1.b0 = 5
+            s_axi_awaddr            <= std_logic_vector(to_unsigned(16#4000_0018#, 32));
+            s_axi_awvalid           <= '1';
+            s_axi_wdata             <= "00000101";
+            s_axi_wvalid            <= '1';
+
+            wait on s_axi_awready, s_axi_wready;
+
+            if s_axi_awready = '1' and s_axi_wready = '1' then 
+                s_axi_awvalid       <= '0';
+                s_axi_wvalid        <= '0';
+            elsif s_axi_awready = '1' then
+                s_axi_awvalid       <= '0';
+                wait on s_axi_wready;
+                s_axi_wvalid        <= '0';
+            elsif s_axi_wready = '1' then
+                s_axi_wvalid        <= '0';
+                wait on s_axi_awready;
+                s_axi_awvalid       <= '0';
+            end if;
+
+            wait on s_axi_bvalid;
+
+            if s_axi_bvalid = '1' then 
+                s_axi_bready <= '1';
+                wait for 2 * CLOCK_PERIOD;
+                s_axi_bready <= '0';
+            end if;
+
+            wait for 6*CLOCK_PERIOD;
+
             wait;
 
         end process;
-   
-        p_clock : process begin
-
-            clk     <= '0';
-            wait for CLOCK_PERIOD_2;
-            clk     <= '1';
-            wait for CLOCK_PERIOD_2;
-
-        end process;     
     
 end architecture;
 
