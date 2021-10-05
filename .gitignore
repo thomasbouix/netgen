@@ -18,4 +18,5 @@
 *.xml
 xgui
 
-
+# python
+__pycache__
