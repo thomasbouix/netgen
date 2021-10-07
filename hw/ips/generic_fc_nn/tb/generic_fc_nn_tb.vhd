@@ -144,7 +144,7 @@ begin
 
             -------------------------------------------------------------------------------
 
-            report "[2] Settings L0.b3 = -1";
+            report "[2] Settings L0.B3 = -1";
 
             s_axi_awaddr            <= std_logic_vector(to_unsigned(16#4000_000B#, 32));
             s_axi_awvalid           <= '1';
@@ -218,7 +218,7 @@ begin
 
             report "[4] Settings L4.B3 = -10";
 
-            s_axi_awaddr            <= std_logic_vector(to_unsigned(16#4000_0043#, 32));
+            s_axi_awaddr            <= std_logic_vector(to_unsigned(16#4000_0042#, 32));
             s_axi_awvalid           <= '1';
             s_axi_wdata             <= X"F6";
             s_axi_wvalid            <= '1';

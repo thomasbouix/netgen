@@ -109,21 +109,13 @@ begin
 
                 end if;
 
-                report "------------------------------------------------";
-                report "v_write_addr        : " & integer'image(v_write_addr);
-                report "weights_mem_base    : " & integer'image(c_WEIGHTS_MEM_BASE);
-                report "bias_mem_base       : " & integer'image(c_BIAS_MEM_BASE);
-
                 if v_weight_addr = '1' then
                     v_weight_i                              := (to_integer(signed(cfg_addr)) - g_MEM_BASE) /   g_NB_INPUTS; 
                     v_weight_j                              := (to_integer(signed(cfg_addr)) - g_MEM_BASE) mod g_NB_INPUTS; 
                     r_weights(v_weight_i, v_weight_j)       <=  to_integer(signed(cfg_data)); 
-                    report "IS_WEIGHT";
 
                 elsif v_bias_addr = '1' then
                     r_bias(v_write_addr - c_BIAS_MEM_BASE)  <=  to_integer(signed(cfg_data)); 
-                    report "IS_BIAS";
-
                 end if;
 
                 v_weight_addr       := '0';
