@@ -94,21 +94,19 @@ architecture rtl of generic_fc_nn is
 
     -- computes the base addr of the ith layer in the newtork
     pure function f_compute_layer_addr (i : integer) return integer is 
-        variable v_addr : integer := 16#4000_0000#;
     begin
 
         if i = 0 then
-            return v_addr;
+            return 16#4000_0000#;
         end if;
 
         if i = 1 then
-            return v_addr + p_NETWORK_INPUTS * p_NETWORK_NEURONS(0) + p_NETWORK_NEURONS(0);
+            return f_compute_layer_addr(0) + p_NETWORK_INPUTS * p_NETWORK_NEURONS(0) + p_NETWORK_NEURONS(0); 
         end if;
 
         -- base_addr(layer i) = base_addr(layer i-1) + range(layer i-1)
-        v_addr := f_compute_layer_addr(i-1) + p_NETWORK_NEURONS(i-1) * p_NETWORK_NEURONS(i) + p_NETWORK_NEURONS(i); 
+        return f_compute_layer_addr(i-1) + p_NETWORK_NEURONS(i-2) * p_NETWORK_NEURONS(i-1) + p_NETWORK_NEURONS(i-1); 
 
-        return v_addr;
     end function;
     
     type T_CFG_SM                 is (PROCESSING_DATA, WRITING_RESP);                                   -- axi state machine type
