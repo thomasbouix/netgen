@@ -1,6 +1,4 @@
 -- Generic Fully Convolutionnal Neural Network
--- typical structure : 
--- 2 3 3 3 4
 
 library ieee;
 use ieee.std_logic_1164.all;
@@ -54,8 +52,8 @@ architecture rtl of generic_fc_nn is
 
     -- computes the number of internal connexions between all layers
     -- ex : network = 2 -> 3 -> 4 -> 5
-    -- ex : number of interconnected neurons = 2 + 3 + 4 = 9
-    -- ex : number of connexions = 9 * data_width 
+    --      number of interconnected neurons = 2 + 3 + 4 = 9
+    --      number of connexions = 9 * data_width 
     pure function f_nb_connexions return integer is
         variable v_size : integer := 0;
     begin
@@ -63,11 +61,11 @@ architecture rtl of generic_fc_nn is
             v_size := v_size + p_NETWORK_NEURONS(i) * p_DATA_WIDTH;
         end loop;
         return v_size;
-    end function; 
+    end function;
 
     -- computes the index of the last output connexion of a layer
     -- ex : FL0.outputs = [MAX downto f_last_output_index(0) ]
-    -- ex : ML1.outputs = [FL0.last - 1 downto f_last_output_index(1) ]
+    --      ML1.outputs = [FL0.last - 1 downto f_last_output_index(1) ]
     pure function f_last_output_index (layer_index : integer) return integer is 
         variable v_output_index : integer := f_nb_connexions - 1;                                       -- max index of r_layer_connexions
     begin
@@ -94,21 +92,21 @@ architecture rtl of generic_fc_nn is
         return v_input_index;
     end function;
 
-    -- computes the base addr of a layer in the newtork
-    pure function f_compute_layer_addr (index : integer) return integer is 
-        variable v_addr : integer := 16#4000_0000#;
+    -- computes the base addr of the ith layer in the newtork
+    pure function f_compute_layer_addr (i : integer) return integer is 
     begin
 
-        if index = 0 then
-            return v_addr;
+        if i = 0 then
+            return 16#4000_0000#;
         end if;
 
-        for i in 1 to index loop
-            -- base_addr(layer i) = base_addr(layer i-1) + range(layer i-1)
-            -- range(layer) := nb_weights = nb_inputs * nb_outputs             + nb_bias = nb_outputs
-            v_addr := v_addr + p_NETWORK_NEURONS(i-1) * p_NETWORK_NEURONS(i-1) + p_NETWORK_NEURONS(i-1);    
-        end loop;
-        return v_addr;
+        if i = 1 then
+            return f_compute_layer_addr(0) + p_NETWORK_INPUTS * p_NETWORK_NEURONS(0) + p_NETWORK_NEURONS(0); 
+        end if;
+
+        -- base_addr(layer i) = base_addr(layer i-1) + range(layer i-1)
+        return f_compute_layer_addr(i-1) + p_NETWORK_NEURONS(i-2) * p_NETWORK_NEURONS(i-1) + p_NETWORK_NEURONS(i-1); 
+
     end function;
     
     type T_CFG_SM                 is (PROCESSING_DATA, WRITING_RESP);                                   -- axi state machine type

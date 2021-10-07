@@ -9,6 +9,8 @@
 *.runs
 *.srcs
 *.gen
+*.sim
+*.ip_user_files
 *.xpr
 *.jou
 *.log
@@ -16,4 +18,5 @@
 *.xml
 xgui
 
-
+# python
+__pycache__

@@ -1,5 +1,10 @@
-<h1>Neural Network Generator : Technical Reference Manual</h1>
-<h2>I/ Introduction</h2>
+<head>
+    <title>NetGen : Technical Reference Manual</title>
+</head>
+
+<body>
+
+<h1>I/ Introduction</h1>
 
 VHDL naming conventions : 
 
@@ -12,23 +17,23 @@ t_  : User-Defined Type
 v_  : Variables
 </pre>
 
-<h2>II/ Parameters</h2>
+<h1>II/ Parameters</h1>
 
-<h3>A/ Overview</h3>
+<h2>A/ Overview</h2>
 
 <p>
-p_DATA_WIDTH is global for all project, so it is inside a package (parameters.vhd) shared between all IPs.
 All IPs’ IO must be std_logic. It helps with Vivado and GHDL / GTKWave.
+p_DATA_WIDTH is global for all project, so it is inside a package (parameters.vhd) shared between all IPs.
 </p>
 
-<h2>III/ Generic Layer</h2>
+<h1>III/ Generic Layer</h1>
 
-<h3>A/ Overview</h3>
+<h2>A/ Overview</h2>
 
 <img src="images/generic_layer.jpg">
 
 
-<h3>B/ Index details</h3>
+<h2>B/ Index details</h2>
 
 <pre>
 I/O format example : NB_INPUTS=4, DATA_WIDTH=8
@@ -38,24 +43,27 @@ signed equivalent (7 downto 0)   7        0   7        0   7        0   7       
 data index                            0            1            2          3
 </pre>
 
-<h3>C/ Configuration detail</h3>
+<h2>C/ Configuration detail</h2>
 <p>
-Each “data” (weight or bias) has its address inside the IP.
-They are configured through a minimalist protocol with only an addr bus and a data bus
+Each “data” (weight or bias) has its onw address inside the IP (the address is independent of the data_width).  
+They are configured through a minimalist protocol with only an addr and a data signal.  
 The data bus is p_DATA_WIDTH large, so the configuration bus configures one weight / bias at the time.
 
-As all layers are in the same address space (also shared with the PS7), they need to have an bias so they can distinguish incoming addresses. 
+As all layers are in the same address space (also shared with the PS7), they need to have an offset so they can distinguish incoming addresses. 
 
 Weights come first in the address space, followed by bias.
 </p>
 
-<h2>IV/ Generic Fully-Connected Neural Network</h2>
+<h1>IV/ Generic Fully-Connected Neural Network</h1>
 
-<h3>A/ Overview</h3>
+<h2>A/ Overview</h2>
 
 <img src="images/generic_fc_nn.jpg">
 
-<h3>B/ Configuration</h3>
+<p>
+</p>
+
+<h2>B/ Configuration</h2>
 
 <p>
 All generic layers inside the network are in the same address space.
@@ -69,12 +77,45 @@ Thus, we have one more generic parameters in the generic layers :
 g_MEM_BASE
 </p>
 
-<h3>C/ Data</h3>
+<h2>C/ Data</h2>
 
 <p>
 Data is flowing through the network using AXI Stream interfaces
 </p>
 
+<h1>V/ Developer's Guide</h1>
 
+<h2>Adding a new HDL IP</h2>
+<pre>
+- ips/Makefile          : add the IP in the "all" and "clean" rules
+- ip/Makefile           : change IP's name
+- ip/script/ip_packager : change IP's name
+- ip/src                : change hdl file's name
+- ip/tb                 : change test bench's name
+</pre>
 
+<h2>IP packaging</h2>
+<p>
+To package all the IP inside the framework
+</p>
+<code>
+$ make ips
+</code>
 
+<h2>Vivado project</h2>
+<p>
+Project configuration, synthesis and implementation inside the vivado/ directory
+</p>
+<code>
+$ make vivado
+</code>
+
+<h2>Vitis project</h2>
+<p>
+Project configuration inside the vitis/ directory
+</p>
+<code>
+$ make vitis
+</code>
+
+</body>

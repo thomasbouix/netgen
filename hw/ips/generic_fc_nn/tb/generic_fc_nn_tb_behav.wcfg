@@ -1,0 +1,247 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wave_config>
+   <wave_state>
+   </wave_state>
+   <db_ref_list>
+      <db_ref path="generic_fc_nn_tb_behav.wdb" id="1">
+         <top_modules>
+            <top_module name="generic_fc_nn_tb" />
+            <top_module name="parameters" />
+         </top_modules>
+      </db_ref>
+   </db_ref_list>
+   <zoom_setting>
+      <ZoomStartTime time="595552fs"></ZoomStartTime>
+      <ZoomEndTime time="1595553fs"></ZoomEndTime>
+      <Cursor1Time time="1000000fs"></Cursor1Time>
+   </zoom_setting>
+   <column_width_setting>
+      <NameColumnWidth column_width="227"></NameColumnWidth>
+      <ValueColumnWidth column_width="106"></ValueColumnWidth>
+   </column_width_setting>
+   <WVObjectSize size="50" />
+   <wave_markers>
+      <marker label="" time="115000" />
+      <marker label="" time="205000" />
+   </wave_markers>
+   <wvobject fp_name="divider47" type="divider">
+      <obj_property name="label">TOP NETWORK</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/generic_fc_nn_tb/clk">
+      <obj_property name="ElementShortName">clk</obj_property>
+      <obj_property name="ObjectShortName">clk</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/generic_fc_nn_tb/rstn">
+      <obj_property name="ElementShortName">rstn</obj_property>
+      <obj_property name="ObjectShortName">rstn</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/generic_fc_nn_tb/s_axi_awaddr">
+      <obj_property name="ElementShortName">s_axi_awaddr[31:0]</obj_property>
+      <obj_property name="ObjectShortName">s_axi_awaddr[31:0]</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/generic_fc_nn_tb/s_axi_awvalid">
+      <obj_property name="ElementShortName">s_axi_awvalid</obj_property>
+      <obj_property name="ObjectShortName">s_axi_awvalid</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/generic_fc_nn_tb/s_axi_awready">
+      <obj_property name="ElementShortName">s_axi_awready</obj_property>
+      <obj_property name="ObjectShortName">s_axi_awready</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/generic_fc_nn_tb/s_axi_wdata">
+      <obj_property name="ElementShortName">s_axi_wdata[7:0]</obj_property>
+      <obj_property name="ObjectShortName">s_axi_wdata[7:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/generic_fc_nn_tb/s_axi_wstrb">
+      <obj_property name="ElementShortName">s_axi_wstrb[0:0]</obj_property>
+      <obj_property name="ObjectShortName">s_axi_wstrb[0:0]</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/generic_fc_nn_tb/s_axi_wvalid">
+      <obj_property name="ElementShortName">s_axi_wvalid</obj_property>
+      <obj_property name="ObjectShortName">s_axi_wvalid</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/generic_fc_nn_tb/s_axi_wready">
+      <obj_property name="ElementShortName">s_axi_wready</obj_property>
+      <obj_property name="ObjectShortName">s_axi_wready</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/generic_fc_nn_tb/s_axi_bresp">
+      <obj_property name="ElementShortName">s_axi_bresp[1:0]</obj_property>
+      <obj_property name="ObjectShortName">s_axi_bresp[1:0]</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/generic_fc_nn_tb/s_axi_bvalid">
+      <obj_property name="ElementShortName">s_axi_bvalid</obj_property>
+      <obj_property name="ObjectShortName">s_axi_bvalid</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/generic_fc_nn_tb/s_axi_bready">
+      <obj_property name="ElementShortName">s_axi_bready</obj_property>
+      <obj_property name="ObjectShortName">s_axi_bready</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/generic_fc_nn_tb/generic_fc_nn/cfg_addr">
+      <obj_property name="ElementShortName">cfg_addr[31:0]</obj_property>
+      <obj_property name="ObjectShortName">cfg_addr[31:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/generic_fc_nn_tb/generic_fc_nn/cfg_data">
+      <obj_property name="ElementShortName">cfg_data[7:0]</obj_property>
+      <obj_property name="ObjectShortName">cfg_data[7:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/generic_fc_nn_tb/generic_fc_nn/r_network_inputs">
+      <obj_property name="ElementShortName">r_network_inputs[15:0]</obj_property>
+      <obj_property name="ObjectShortName">r_network_inputs[15:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/generic_fc_nn_tb/generic_fc_nn/r_network_outputs">
+      <obj_property name="ElementShortName">r_network_outputs[31:0]</obj_property>
+      <obj_property name="ObjectShortName">r_network_outputs[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="divider47" type="divider">
+      <obj_property name="label">LAYER 0</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+   </wvobject>
+   <wvobject type="other" fp_name="/generic_fc_nn_tb/generic_fc_nn/\layers(0)\/first_layer/FL/c_WEIGHTS_MEM_BASE">
+      <obj_property name="ElementShortName">c_WEIGHTS_MEM_BASE</obj_property>
+      <obj_property name="ObjectShortName">c_WEIGHTS_MEM_BASE</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject type="other" fp_name="/generic_fc_nn_tb/generic_fc_nn/\layers(0)\/first_layer/FL/c_WEIGHTS_MEM_END">
+      <obj_property name="ElementShortName">c_WEIGHTS_MEM_END</obj_property>
+      <obj_property name="ObjectShortName">c_WEIGHTS_MEM_END</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject type="other" fp_name="/generic_fc_nn_tb/generic_fc_nn/\layers(0)\/first_layer/FL/c_BIAS_MEM_BASE">
+      <obj_property name="ElementShortName">c_BIAS_MEM_BASE</obj_property>
+      <obj_property name="ObjectShortName">c_BIAS_MEM_BASE</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject type="other" fp_name="/generic_fc_nn_tb/generic_fc_nn/\layers(0)\/first_layer/FL/c_BIAS_MEM_END">
+      <obj_property name="ElementShortName">c_BIAS_MEM_END</obj_property>
+      <obj_property name="ObjectShortName">c_BIAS_MEM_END</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/generic_fc_nn_tb/generic_fc_nn/\layers(0)\/first_layer/FL/r_weights">
+      <obj_property name="ElementShortName">r_weights[0:3,0:1]</obj_property>
+      <obj_property name="ObjectShortName">r_weights[0:3,0:1]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/generic_fc_nn_tb/generic_fc_nn/\layers(0)\/first_layer/FL/r_bias">
+      <obj_property name="ElementShortName">r_bias[0:3]</obj_property>
+      <obj_property name="ObjectShortName">r_bias[0:3]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/generic_fc_nn_tb/generic_fc_nn/\layers(0)\/first_layer/FL/r_inputs">
+      <obj_property name="ElementShortName">r_inputs[0:1]</obj_property>
+      <obj_property name="ObjectShortName">r_inputs[0:1]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/generic_fc_nn_tb/generic_fc_nn/\layers(0)\/first_layer/FL/r_outputs">
+      <obj_property name="ElementShortName">r_outputs[0:3]</obj_property>
+      <obj_property name="ObjectShortName">r_outputs[0:3]</obj_property>
+   </wvobject>
+   <wvobject fp_name="divider47" type="divider">
+      <obj_property name="label">LAYER 1</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+   </wvobject>
+   <wvobject type="other" fp_name="/generic_fc_nn_tb/generic_fc_nn/\layers(1)\/middle_layers/ML/c_WEIGHTS_MEM_BASE">
+      <obj_property name="ElementShortName">c_WEIGHTS_MEM_BASE</obj_property>
+      <obj_property name="ObjectShortName">c_WEIGHTS_MEM_BASE</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject type="other" fp_name="/generic_fc_nn_tb/generic_fc_nn/\layers(1)\/middle_layers/ML/c_WEIGHTS_MEM_END">
+      <obj_property name="ElementShortName">c_WEIGHTS_MEM_END</obj_property>
+      <obj_property name="ObjectShortName">c_WEIGHTS_MEM_END</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject type="other" fp_name="/generic_fc_nn_tb/generic_fc_nn/\layers(1)\/middle_layers/ML/c_BIAS_MEM_BASE">
+      <obj_property name="ElementShortName">c_BIAS_MEM_BASE</obj_property>
+      <obj_property name="ObjectShortName">c_BIAS_MEM_BASE</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject type="other" fp_name="/generic_fc_nn_tb/generic_fc_nn/\layers(1)\/middle_layers/ML/c_BIAS_MEM_END">
+      <obj_property name="ElementShortName">c_BIAS_MEM_END</obj_property>
+      <obj_property name="ObjectShortName">c_BIAS_MEM_END</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/generic_fc_nn_tb/generic_fc_nn/\layers(1)\/middle_layers/ML/r_weights">
+      <obj_property name="ElementShortName">r_weights[0:2,0:3]</obj_property>
+      <obj_property name="ObjectShortName">r_weights[0:2,0:3]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/generic_fc_nn_tb/generic_fc_nn/\layers(1)\/middle_layers/ML/r_bias">
+      <obj_property name="ElementShortName">r_bias[0:2]</obj_property>
+      <obj_property name="ObjectShortName">r_bias[0:2]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/generic_fc_nn_tb/generic_fc_nn/\layers(1)\/middle_layers/ML/r_inputs">
+      <obj_property name="ElementShortName">r_inputs[0:3]</obj_property>
+      <obj_property name="ObjectShortName">r_inputs[0:3]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/generic_fc_nn_tb/generic_fc_nn/\layers(1)\/middle_layers/ML/r_outputs">
+      <obj_property name="ElementShortName">r_outputs[0:2]</obj_property>
+      <obj_property name="ObjectShortName">r_outputs[0:2]</obj_property>
+   </wvobject>
+   <wvobject fp_name="divider47" type="divider">
+      <obj_property name="label">LAYER 2</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+   </wvobject>
+   <wvobject type="other" fp_name="/generic_fc_nn_tb/generic_fc_nn/\layers(2)\/middle_layers/ML/c_WEIGHTS_MEM_BASE">
+      <obj_property name="ElementShortName">c_WEIGHTS_MEM_BASE</obj_property>
+      <obj_property name="ObjectShortName">c_WEIGHTS_MEM_BASE</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject type="other" fp_name="/generic_fc_nn_tb/generic_fc_nn/\layers(2)\/middle_layers/ML/c_WEIGHTS_MEM_END">
+      <obj_property name="ElementShortName">c_WEIGHTS_MEM_END</obj_property>
+      <obj_property name="ObjectShortName">c_WEIGHTS_MEM_END</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject type="other" fp_name="/generic_fc_nn_tb/generic_fc_nn/\layers(2)\/middle_layers/ML/c_BIAS_MEM_BASE">
+      <obj_property name="ElementShortName">c_BIAS_MEM_BASE</obj_property>
+      <obj_property name="ObjectShortName">c_BIAS_MEM_BASE</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject type="other" fp_name="/generic_fc_nn_tb/generic_fc_nn/\layers(2)\/middle_layers/ML/c_BIAS_MEM_END">
+      <obj_property name="ElementShortName">c_BIAS_MEM_END</obj_property>
+      <obj_property name="ObjectShortName">c_BIAS_MEM_END</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="divider47" type="divider">
+      <obj_property name="label">LAYER 3</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+   </wvobject>
+   <wvobject type="other" fp_name="/generic_fc_nn_tb/generic_fc_nn/\layers(3)\/middle_layers/ML/c_WEIGHTS_MEM_BASE">
+      <obj_property name="ElementShortName">c_WEIGHTS_MEM_BASE</obj_property>
+      <obj_property name="ObjectShortName">c_WEIGHTS_MEM_BASE</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject type="other" fp_name="/generic_fc_nn_tb/generic_fc_nn/\layers(3)\/middle_layers/ML/c_WEIGHTS_MEM_END">
+      <obj_property name="ElementShortName">c_WEIGHTS_MEM_END</obj_property>
+      <obj_property name="ObjectShortName">c_WEIGHTS_MEM_END</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject type="other" fp_name="/generic_fc_nn_tb/generic_fc_nn/\layers(3)\/middle_layers/ML/c_BIAS_MEM_BASE">
+      <obj_property name="ElementShortName">c_BIAS_MEM_BASE</obj_property>
+      <obj_property name="ObjectShortName">c_BIAS_MEM_BASE</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject type="other" fp_name="/generic_fc_nn_tb/generic_fc_nn/\layers(3)\/middle_layers/ML/c_BIAS_MEM_END">
+      <obj_property name="ElementShortName">c_BIAS_MEM_END</obj_property>
+      <obj_property name="ObjectShortName">c_BIAS_MEM_END</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="divider47" type="divider">
+      <obj_property name="label">LAYER 4</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+   </wvobject>
+   <wvobject type="other" fp_name="/generic_fc_nn_tb/generic_fc_nn/\layers(4)\/last_layer/LL/c_WEIGHTS_MEM_BASE">
+      <obj_property name="ElementShortName">c_WEIGHTS_MEM_BASE</obj_property>
+      <obj_property name="ObjectShortName">c_WEIGHTS_MEM_BASE</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject type="other" fp_name="/generic_fc_nn_tb/generic_fc_nn/\layers(4)\/last_layer/LL/c_WEIGHTS_MEM_END">
+      <obj_property name="ElementShortName">c_WEIGHTS_MEM_END</obj_property>
+      <obj_property name="ObjectShortName">c_WEIGHTS_MEM_END</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject type="other" fp_name="/generic_fc_nn_tb/generic_fc_nn/\layers(4)\/last_layer/LL/c_BIAS_MEM_BASE">
+      <obj_property name="ElementShortName">c_BIAS_MEM_BASE</obj_property>
+      <obj_property name="ObjectShortName">c_BIAS_MEM_BASE</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject type="other" fp_name="/generic_fc_nn_tb/generic_fc_nn/\layers(4)\/last_layer/LL/c_BIAS_MEM_END">
+      <obj_property name="ElementShortName">c_BIAS_MEM_END</obj_property>
+      <obj_property name="ObjectShortName">c_BIAS_MEM_END</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+</wave_config>

@@ -1,7 +1,7 @@
 # GHDL-GCC + VIVADO MAKEFILE
 
 IP_NAME=generic_fc_nn
-STOP_TIME=150ns
+STOP_TIME=1000ns
 
 # Elaboration of the simulation executable
 ghdl : 
@@ -14,7 +14,7 @@ ghdl :
 # Run and display of the simulation
 sim : ghdl
 	./$(IP_NAME)_tb --stop-time=$(STOP_TIME) --vcd=$(IP_NAME).vcd
-	gtkwave $(IP_NAME).vcd
+	# gtkwave $(IP_NAME).vcd
 
 clean_ghdl :
 	rm -f $(IP_NAME)_tb *.cf *.o *.vcd
