@@ -82,7 +82,8 @@ begin
 
         p_test_bench : process begin
 
-            report "STARTING TESTBENCH";
+            report "Network architecture => 2 : (4 3 2 4 4) : 4";
+            report "Starting testbench";
 
             -- configuration
             s_axi_awaddr            <= (others => '0');
@@ -94,22 +95,20 @@ begin
             s_axi_bready            <= '0'; 
 
             -------------------------------------------------------------------------------
-            ------------------------------ INPUTS = (1, 0) --------------------------------
-            -------------------------------------------------------------------------------
-            report "Settings inputs = (1, 0)";
+
+            report "[0] Settings inputs = (1, 0)";
 
             s_axis_tdata            <= (8 => '1', 0 => '0', others  => '0'); 
             s_axis_tvalid           <= '1';
 
             wait until rstn = '1';
             wait for 10*CLOCK_PERIOD;
-            report "[1] Testing outputs";
-            assert m_axis_tdata = X"6060_6060" report "[1] : OUTPUT ERROR";  
+            report "[0] Testing outputs";
+            assert m_axis_tdata = X"6060_6060" report "[0] Output error";  
 
             -------------------------------------------------------------------------------
-            --------------------------------- L0.W00 = 2 ----------------------------------
-            -------------------------------------------------------------------------------
-            report "Settings L0.W00 = 2";
+
+            report "[1] Settings L0.W00 = 2";
 
             s_axi_awaddr            <= std_logic_vector(to_unsigned(16#4000_0000#, 32));
             s_axi_awvalid           <= '1';
@@ -140,16 +139,50 @@ begin
             end if;
 
             wait for 10*CLOCK_PERIOD;
+            report "[1] Testing outputs";
+            assert m_axis_tdata = X"7878_7878" report "[1] Output error";  
+
+            -------------------------------------------------------------------------------
+
+            report "[2] Settings L0.b3 = -1";
+
+            s_axi_awaddr            <= std_logic_vector(to_unsigned(16#4000_000B#, 32));
+            s_axi_awvalid           <= '1';
+            s_axi_wdata             <= X"FF";
+            s_axi_wvalid            <= '1';
+
+            wait on s_axi_awready, s_axi_wready;
+
+            if s_axi_awready = '1' and s_axi_wready = '1' then 
+                s_axi_awvalid       <= '0';
+                s_axi_wvalid        <= '0';
+            elsif s_axi_awready = '1' then
+                s_axi_awvalid       <= '0';
+                wait on s_axi_wready;
+                s_axi_wvalid        <= '0';
+            elsif s_axi_wready = '1' then
+                s_axi_wvalid        <= '0';
+                wait on s_axi_awready;
+                s_axi_awvalid       <= '0';
+            end if;
+
+            wait on s_axi_bvalid;
+
+            if s_axi_bvalid = '1' then 
+                s_axi_bready <= '1';
+                wait for 2 * CLOCK_PERIOD;
+                s_axi_bready <= '0';
+            end if;
+
+            wait for 10*CLOCK_PERIOD;
             report "[2] Testing outputs";
-            assert m_axis_tdata = X"7878_7878" report "[2] : OUTPUT ERROR";  
+            assert m_axis_tdata = X"6060_6060" report "[2] Output error";  
 
             -------------------------------------------------------------------------------
-            --------------------------------- L0.b0 = -1 ----------------------------------
-            -------------------------------------------------------------------------------
-            report "Settings L0.b0 = -1";
 
-            -- L0.b0 = -1
-            s_axi_awaddr            <= std_logic_vector(to_unsigned(16#4000_0008#, 32));
+            report "[3] Settings L1.W01 = -1";
+
+            s_axi_awaddr            <= std_logic_vector(to_unsigned(16#4000_000D#, 32));
             s_axi_awvalid           <= '1';
             s_axi_wdata             <= X"FF";
             s_axi_wvalid            <= '1';
@@ -179,47 +212,43 @@ begin
 
             wait for 10*CLOCK_PERIOD;
             report "[3] Testing outputs";
-            assert m_axis_tdata = X"6060_6060" report "[3] : OUTPUT ERROR";  
+            assert m_axis_tdata = X"5050_5050" report "[3] Output error";  
 
+            -------------------------------------------------------------------------------
 
+            report "[4] Settings L4.B3 = -10";
 
---          -------------------------------------------------------------------------------
---          --------------------------------- L1.b0 = -5 ----------------------------------
---          -------------------------------------------------------------------------------
---          report "Settings L1.b0 = -5";
+            s_axi_awaddr            <= std_logic_vector(to_unsigned(16#4000_0043#, 32));
+            s_axi_awvalid           <= '1';
+            s_axi_wdata             <= X"F6";
+            s_axi_wvalid            <= '1';
 
---          -- L1.b0 = -5
---          s_axi_awaddr            <= std_logic_vector(to_unsigned(16#4000_0018#, 32));
---          s_axi_awvalid           <= '1';
---          s_axi_wdata             <= X"FA";
---          s_axi_wvalid            <= '1';
+            wait on s_axi_awready, s_axi_wready;
 
---          wait on s_axi_awready, s_axi_wready;
+            if s_axi_awready = '1' and s_axi_wready = '1' then 
+                s_axi_awvalid       <= '0';
+                s_axi_wvalid        <= '0';
+            elsif s_axi_awready = '1' then
+                s_axi_awvalid       <= '0';
+                wait on s_axi_wready;
+                s_axi_wvalid        <= '0';
+            elsif s_axi_wready = '1' then
+                s_axi_wvalid        <= '0';
+                wait on s_axi_awready;
+                s_axi_awvalid       <= '0';
+            end if;
 
---          if s_axi_awready = '1' and s_axi_wready = '1' then 
---              s_axi_awvalid       <= '0';
---              s_axi_wvalid        <= '0';
---          elsif s_axi_awready = '1' then
---              s_axi_awvalid       <= '0';
---              wait on s_axi_wready;
---              s_axi_wvalid        <= '0';
---          elsif s_axi_wready = '1' then
---              s_axi_wvalid        <= '0';
---              wait on s_axi_awready;
---              s_axi_awvalid       <= '0';
---          end if;
+            wait on s_axi_bvalid;
 
---          wait on s_axi_bvalid;
+            if s_axi_bvalid = '1' then 
+                s_axi_bready <= '1';
+                wait for 2 * CLOCK_PERIOD;
+                s_axi_bready <= '0';
+            end if;
 
---          if s_axi_bvalid = '1' then 
---              s_axi_bready <= '1';
---              wait for 2 * CLOCK_PERIOD;
---              s_axi_bready <= '0';
---          end if;
-
---          wait for 10*CLOCK_PERIOD;
---          report "[3] Testing outputs";
---          assert m_axis_tdata = X"5050_5050" report "[3] : OUTPUT ERROR";  
+            wait for 10*CLOCK_PERIOD;
+            report "[4] Testing outputs";
+            assert m_axis_tdata = X"5050_5046" report "[4] Output error";  
 
             report "TESTBENCH DONE";
             wait;
