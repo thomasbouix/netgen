@@ -1,3 +1,9 @@
+-- this testbench must be executed with the following parameters :
+-- data_width   : 8
+-- nb_inputs    : 2
+-- neurons      : (4, 3, 2, 4, 4) 
+-- nb_outputs   : 4
+
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
@@ -82,8 +88,10 @@ begin
 
         p_test_bench : process begin
 
+            report "-------------------------------------------";
+            report "Data Width           => 8 bits";
             report "Network architecture => 2 : (4 3 2 4 4) : 4";
-            report "Starting testbench";
+            report "-------------------------------------------";
 
             -- configuration
             s_axi_awaddr            <= (others => '0');
@@ -97,6 +105,7 @@ begin
             -------------------------------------------------------------------------------
 
             report "[0] Settings inputs = (1, 0)";
+            report "--";
 
             s_axis_tdata            <= (8 => '1', 0 => '0', others  => '0'); 
             s_axis_tvalid           <= '1';
@@ -109,6 +118,7 @@ begin
             -------------------------------------------------------------------------------
 
             report "[1] Settings L0.W00 = 2";
+            report "--";
 
             s_axi_awaddr            <= std_logic_vector(to_unsigned(16#4000_0000#, 32));
             s_axi_awvalid           <= '1';
@@ -144,7 +154,8 @@ begin
 
             -------------------------------------------------------------------------------
 
-            report "[2] Settings L0.B3 = -1";
+            report "[2] Settings L0.B3  = -1";
+            report "--";
 
             s_axi_awaddr            <= std_logic_vector(to_unsigned(16#4000_000B#, 32));
             s_axi_awvalid           <= '1';
@@ -181,6 +192,7 @@ begin
             -------------------------------------------------------------------------------
 
             report "[3] Settings L1.W01 = -1";
+            report "--";
 
             s_axi_awaddr            <= std_logic_vector(to_unsigned(16#4000_000D#, 32));
             s_axi_awvalid           <= '1';
@@ -216,7 +228,8 @@ begin
 
             -------------------------------------------------------------------------------
 
-            report "[4] Settings L4.B3 = -10";
+            report "[4] Settings L4.B3  = -10";
+            report "--";
 
             s_axi_awaddr            <= std_logic_vector(to_unsigned(16#4000_0042#, 32));
             s_axi_awvalid           <= '1';
@@ -250,7 +263,7 @@ begin
             report "[4] Testing outputs";
             assert m_axis_tdata = X"5050_5046" report "[4] Output error";  
 
-            report "TESTBENCH DONE";
+            report "--";
             wait;
 
         end process;
