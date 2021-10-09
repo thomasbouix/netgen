@@ -110,15 +110,19 @@ architecture rtl of generic_fc_nn is
     end function;
     
     type T_CFG_SM                 is (PROCESSING_DATA, WRITING_RESP);                                   -- axi state machine type
+    type T_OUTPUT_SM              is (WAITING_FOR_OUTPUT, WRITING_OUTPUT);                              -- axi state machine type
 
-    constant c_NB_CONNEXIONS    : integer                                                               := f_nb_connexions;
+    constant c_NB_CONNEXIONS    : integer                                                               := f_nb_connexions      ;
 
-    signal r_cfg_sm             : T_CFG_SM                                                              := PROCESSING_DATA;
-    signal r_network_inputs     : std_logic_vector(p_NETWORK_INPUTS  * p_DATA_WIDTH - 1 downto 0)       := (others => '0');
-    signal r_network_outputs    : std_logic_vector(p_NETWORK_OUTPUTS * p_DATA_WIDTH - 1 downto 0)       := (others => '0');
-    signal r_layer_connexions   : std_logic_vector(c_NB_CONNEXIONS -  1                 downto 0)       := (others => '0');
-    signal cfg_addr             : std_logic_vector(31 downto 0)                                         := (others => '0');
-    signal cfg_data             : std_logic_vector(p_DATA_WIDTH - 1 downto 0)                           := (others => '0');
+    signal r_cfg_sm             : T_CFG_SM                                                              := PROCESSING_DATA      ;
+    signal r_output_sm          : T_OUTPUT_SM                                                           := WAITING_FOR_OUTPUT   ;
+    signal r_network_inputs     : std_logic_vector(p_NETWORK_INPUTS  * p_DATA_WIDTH - 1 downto 0)       := (others => '0')      ;
+    signal r_network_outputs    : std_logic_vector(p_NETWORK_OUTPUTS * p_DATA_WIDTH - 1 downto 0)       := (others => '0')      ;
+    signal r_layer_connexions   : std_logic_vector(c_NB_CONNEXIONS -  1                 downto 0)       := (others => '0')      ;
+    signal cfg_addr             : std_logic_vector(31 downto 0)                                         := (others => '0')      ;
+    signal cfg_data             : std_logic_vector(p_DATA_WIDTH - 1 downto 0)                           := (others => '0')      ;
+    signal r_shift              : std_logic_vector(p_NETWORK_NEURONS'length downto 0)                   := (others => '0')      ;
+    signal r_tlast_old          : std_logic                                                             := '0'                  ;
 
     -- generic_layer class header
     component generic_layer
@@ -262,6 +266,8 @@ begin
     end process; 
 
     -- receiving inputs through s_axis interface
+    -- the network is receiving 1 input / clock cycle
+    -- if it has 3 inputs, it needs 3 clock cycles to get them all
     p_inputs_processing : process(clk) is
 
         variable i              : integer range 0 to p_NETWORK_INPUTS                           := 0;               -- input index
@@ -282,15 +288,15 @@ begin
 
                 if s_axis_tvalid = '1' then
 
-                    v_input_buffer(p_DATA_WIDTH*(p_NETWORK_INPUTS-i)-1 downto p_DATA_WIDTH*(p_NETWORK_INPUTS-i-1))  := (others => '0');
-                                            -- := s_axis_tdata(p_DATA_WIDTH - 1 downto 0);
+                    v_input_buffer(p_DATA_WIDTH*(p_NETWORK_INPUTS-i)-1 downto p_DATA_WIDTH*(p_NETWORK_INPUTS-i-1))  
+                                            := s_axis_tdata(p_DATA_WIDTH - 1 downto 0);
                     s_axis_tready           <= '1';                    
 
-                    if s_axis_tlast = '1' then -- receiving the last input
+                    if s_axis_tlast = '1' then                  -- receiving the last input
+                        r_network_inputs    <= v_input_buffer;  -- copying input construction buffer to real first layer input
                         i                   :=  0 ;
-                        r_network_inputs    <= v_input_buffer;
                     else 
-                        i                   := i+1;
+                        i                   := i+1;             -- still receiving inputs : still building input buffer
                     end if;
 
                 else
@@ -301,11 +307,46 @@ begin
         end if;
     end process;
 
+    -- this process tracks the data flowing through the network from input to output
+    -- when an input is fully written, a 1 is pushed into the shifting register (represented by and std_logic_vector)
+    -- each bit of the register represents a layer in the network
+    -- when the 1 reaches the last bit, it means the data is at the end of the network, so we can display the output
+    p_data_tracker : process(clk) is 
+
+    begin
+
+        if rising_edge(clk) then
+
+            if rstn = '0' then
+    
+                r_tlast_old <= '0';
+
+            else 
+
+                r_tlast_old <= s_axis_tlast;
+
+                if r_tlast_old = '0' and s_axis_tlast = '1' then        -- new input detected, adding a 1 to shifting register
+                    r_shift(r_shift'left) <= '1';
+                else                                                    -- no new input
+                    r_shift(r_shift'left) <= '0';
+                end if;
+
+                for i in r_shift'left-1 to 0 loop
+                    r_shift(i) <= r_shift(i+1);
+                end loop;
+            
+            end if;
+        end if;
+
+    end process;
+
+
     -- formatting outputs to m_axis interface
-    -- TO DO : IS THE SLAVE IS READY ?
+    -- an input has been fully processed when there is a 1 in the last position of the shifting register
+    -- does not check if the slave is ready
     p_outputs_processing : process(clk) is
 
-        variable i : integer range 0 to p_NETWORK_OUTPUTS - 1 := 0; -- current output index
+        variable i : integer range 0 to p_NETWORK_OUTPUTS - 1 := 1; -- current output index
 
     begin
 
@@ -316,20 +357,43 @@ begin
                 m_axis_tdata            <= (others => '0');
                 m_axis_tvalid           <= '0';
                 m_axis_tlast            <= '0';
-                i := 0;
+                i := 1;
 
             else 
 
-                m_axis_tdata(p_DATA_WIDTH-1 downto 0) 
-                                        <= r_network_outputs(p_DATA_WIDTH*(p_NETWORK_OUTPUTS-i)-1 downto p_DATA_WIDTH*(p_NETWORK_OUTPUTS-i-1));
-                m_axis_tvalid           <= '1';
+                case r_output_sm is
 
-                if i = p_NETWORK_OUTPUTS - 1 then -- sending the last output
-                    m_axis_tlast        <= '1';
-                    i := 0;
-                else                            
-                    i := i+1;
-                end if;
+                    when WAITING_FOR_OUTPUT =>
+                            
+                        -- outputs are ready to be displayed
+                        if r_shift(0) = '1' then                
+                            -- writing first output : output(0)
+                            m_axis_tdata(p_DATA_WIDTH-1 downto 0) <=
+                            r_network_outputs(p_DATA_WIDTH*p_NETWORK_OUTPUTS-1 downto p_DATA_WIDTH*(p_NETWORK_OUTPUTS-1));
+                            r_output_sm         <= WRITING_OUTPUT;
+                        else
+                            r_output_sm         <= WAITING_FOR_OUTPUT;
+                        end if;
+
+                    when WRITING_OUTPUT =>
+
+                        -- writing output(i) from 1 to p_NETWORK_OUTPUT - 1
+                        m_axis_tdata(p_DATA_WIDTH-1 downto 0) <=
+                        r_network_outputs(p_DATA_WIDTH*(p_NETWORK_OUTPUTS-i)-1 downto p_DATA_WIDTH*(p_NETWORK_OUTPUTS-i-1));
+                        m_axis_tvalid           <= '1';
+
+                        if i = p_NETWORK_OUTPUTS - 1 then   -- sending the last output
+                            m_axis_tlast        <= '1';
+                            r_output_sm         <= WAITING_FOR_OUTPUT;
+                            i := 0;
+                        else                            
+                            r_output_sm         <= WRITING_OUTPUT;
+                            i := i+1;
+                        end if;
+
+                    when others =>
+                        r_output_sm             <= WAITING_FOR_OUTPUT;
+                end case;
 
             end if;
         end if;
