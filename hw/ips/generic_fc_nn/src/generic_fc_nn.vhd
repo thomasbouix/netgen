@@ -331,7 +331,7 @@ begin
                     r_shift(r_shift'left) <= '0';
                 end if;
 
-                for i in r_shift'left-1 to 0 loop
+                for i in r_shift'left-1 downto 0 loop
                     r_shift(i) <= r_shift(i+1);
                 end loop;
             
@@ -364,29 +364,34 @@ begin
                 case r_output_sm is
 
                     when WAITING_FOR_OUTPUT =>
+
+                        m_axis_tlast            <= '0';
                             
                         -- outputs are ready to be displayed
                         if r_shift(0) = '1' then                
-                            -- writing first output : output(0)
+                            -- writing the first output : output(0)
                             m_axis_tdata(p_DATA_WIDTH-1 downto 0) <=
-                            r_network_outputs(p_DATA_WIDTH*p_NETWORK_OUTPUTS-1 downto p_DATA_WIDTH*(p_NETWORK_OUTPUTS-1));
+                                r_network_outputs(p_DATA_WIDTH*p_NETWORK_OUTPUTS-1 downto p_DATA_WIDTH*(p_NETWORK_OUTPUTS-1));
+                            m_axis_tvalid       <= '1';
                             r_output_sm         <= WRITING_OUTPUT;
                         else
+                            m_axis_tvalid       <= '0';
                             r_output_sm         <= WAITING_FOR_OUTPUT;
                         end if;
 
                     when WRITING_OUTPUT =>
 
+                        m_axis_tvalid           <= '1';
                         -- writing output(i) from 1 to p_NETWORK_OUTPUT - 1
                         m_axis_tdata(p_DATA_WIDTH-1 downto 0) <=
-                        r_network_outputs(p_DATA_WIDTH*(p_NETWORK_OUTPUTS-i)-1 downto p_DATA_WIDTH*(p_NETWORK_OUTPUTS-i-1));
-                        m_axis_tvalid           <= '1';
+                            r_network_outputs(p_DATA_WIDTH*(p_NETWORK_OUTPUTS-i)-1 downto p_DATA_WIDTH*(p_NETWORK_OUTPUTS-i-1));
 
-                        if i = p_NETWORK_OUTPUTS - 1 then   -- sending the last output
+                        if i = p_NETWORK_OUTPUTS - 1 then   -- writing the last output
                             m_axis_tlast        <= '1';
                             r_output_sm         <= WAITING_FOR_OUTPUT;
                             i := 0;
-                        else                            
+                        else                                -- writing a middle output
+                            m_axis_tlast        <= '0';
                             r_output_sm         <= WRITING_OUTPUT;
                             i := i+1;
                         end if;
