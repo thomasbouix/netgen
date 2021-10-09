@@ -23,7 +23,7 @@ package parameters is
     -- NETWORK PARAMETERS
 
         -- number of inputs of the first layer
-        constant p_NETWORK_INPUTS   : integer                                   := 1;               
+        constant p_NETWORK_INPUTS   : integer                                   := 2;               
 
         -- number of layers inside the network
         constant p_NETWORK_LAYERS   : integer                                   := 5;               

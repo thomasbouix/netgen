@@ -1,8 +1,15 @@
+-----------------------------------------------------------------------------
+-- DEPRECTATED VERSION
+-- IN THIS VERSION, ALL INPUTS/OUTPUTS ARE PROCESSING IN THE SAME CLOCK CYCLE 
+-----------------------------------------------------------------------------
+
 -- this testbench must be executed with the following parameters :
 -- data_width   : 8
 -- nb_inputs    : 2
 -- neurons      : (4, 3, 2, 4, 4) 
 -- nb_outputs   : 4
+
+
 
 library ieee;
 use ieee.std_logic_1164.all;

@@ -264,7 +264,8 @@ begin
     -- receiving inputs through s_axis interface
     p_inputs_processing : process(clk) is
 
-        variable i : integer range 0 to p_NETWORK_INPUTS - 1 := 0;  -- input index
+        variable i              : integer range 0 to p_NETWORK_INPUTS                           := 0;               -- input index
+        variable v_input_buffer : std_logic_vector(p_NETWORK_INPUTS*p_DATA_WIDTH-1 downto 0)    := (others => '0'); -- input construction
 
     begin
 
@@ -272,26 +273,28 @@ begin
 
             if rstn = '0' then
 
-                r_network_inputs        <= (others => '0');
+                v_input_buffer          := (others => '0');     -- input construction
+                r_network_inputs        <= (others => '0');     -- real network inputs
                 s_axis_tready           <= '0';
-                i := 0;
+                i                       :=  0 ;
 
             else 
 
                 if s_axis_tvalid = '1' then
 
-                    r_network_inputs(p_DATA_WIDTH*(p_NETWORK_INPUTS-i)-1 downto p_DATA_WIDTH*(p_NETWORK_INPUTS-i-1))
-                                        <= s_axis_tdata(p_DATA_WIDTH - 1 downto 0);
-                    s_axis_tready       <= '1';                    
+                    v_input_buffer(p_DATA_WIDTH*(p_NETWORK_INPUTS-i)-1 downto p_DATA_WIDTH*(p_NETWORK_INPUTS-i-1))  := (others => '0');
+                                            -- := s_axis_tdata(p_DATA_WIDTH - 1 downto 0);
+                    s_axis_tready           <= '1';                    
 
                     if s_axis_tlast = '1' then -- receiving the last input
-                        i := 0;
+                        i                   :=  0 ;
+                        r_network_inputs    <= v_input_buffer;
                     else 
-                        i := i + 1;
+                        i                   := i+1;
                     end if;
 
                 else
-                    s_axis_tready       <= '0';
+                    s_axis_tready <= '0';
                 end if;
 
             end if;
