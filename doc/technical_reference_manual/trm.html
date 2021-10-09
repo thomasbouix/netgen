@@ -6,116 +6,138 @@
 
 <h1>I/ Introduction</h1>
 
-VHDL naming conventions : 
+    <p>
+    VHDL naming conventions : 
+    <pre>
+    p_  : Shared Parameters
+    r_  : Register signal
+    c_  : Constant
+    g_  : Generic 
+    t_  : User-Defined Type
+    v_  : Variables
+    </pre>
 
-<pre>
-p_  : Shared Parameters
-r_  : Register signal
-c_  : Constant
-g_  : Generic 
-t_  : User-Defined Type
-v_  : Variables
-</pre>
+    All IPs’ IO must be std_logic. It helps with Vivado and GHDL / GTKWave.
+    </p>
 
 <h1>II/ Parameters</h1>
 
-<h2>A/ Overview</h2>
+    <h2>A/ Overview</h2>
 
-<p>
-All IPs’ IO must be std_logic. It helps with Vivado and GHDL / GTKWave.
-p_DATA_WIDTH is global for all project, so it is inside a package (parameters.vhd) shared between all IPs.
-</p>
+        <p>
+        Global hardware parameters are stored in the file hw/ips/parameters/parameters.vhd
+        Those parameters are : 
+        <ul>
+            <li>DATA_WIDTH : cannot be greated that 32, as the integer type is 32 bit wide in VHDL</li>
+            <li>NB_INPUTS</li> 
+            <li>NB_OUTPUTS</li> 
+            <li>NEURONS</li>
+        </ul>
+        </p>
 
 <h1>III/ Generic Layer</h1>
 
-<h2>A/ Overview</h2>
+    <h2>A/ Overview</h2>
 
-<img src="images/generic_layer.jpg">
+        <img src="images/generic_layer.jpg">
 
+    <h2>B/ Index details</h2>
 
-<h2>B/ Index details</h2>
+        <pre>
+        I/O format example : NB_INPUTS=4, DATA_WIDTH=8
 
-<pre>
-I/O format example : NB_INPUTS=4, DATA_WIDTH=8
+        inputs(31 downto 0)             31                                               0
+        signed equivalent (7 downto 0)   7        0   7        0   7        0   7        0
+        data index                            0            1            2          3
+        </pre>
 
-inputs(31 downto 0)             31                                               0
-signed equivalent (7 downto 0)   7        0   7        0   7        0   7        0
-data index                            0            1            2          3
-</pre>
-
-<h2>C/ Configuration detail</h2>
-<p>
-Each “data” (weight or bias) has its onw address inside the IP (the address is independent of the data_width).  
-They are configured through a minimalist protocol with only an addr and a data signal.  
-The data bus is p_DATA_WIDTH large, so the configuration bus configures one weight / bias at the time.
-
-As all layers are in the same address space (also shared with the PS7), they need to have an offset so they can distinguish incoming addresses. 
-
-Weights come first in the address space, followed by bias.
-</p>
+    <h2>C/ Configuration detail</h2>
+        <p>
+        Each “data” (weight or bias) has its onw address inside the IP (the address is independent of the data_width). They are configured through a minimalist protocol with only an addr and a data signal. The data bus is p_DATA_WIDTH large, so the configuration bus configures one weight / bias at the time. As all layers are in the same address space (also shared with the PS7), they need to have an offset so they can distinguish incoming addresses. Weights come first in the address space, followed by bias.
+        </p>
 
 <h1>IV/ Generic Fully-Connected Neural Network</h1>
 
-<h2>A/ Overview</h2>
+    <h2>A/ Overview</h2>
 
-<img src="images/generic_fc_nn.jpg">
+        <img src="images/generic_fc_nn.jpg">
 
-<p>
-</p>
+        <p>
+        Even though the data width is customizable, network's I/O width are fixed in order to facilitate connexions with the PS7.  
+        </p>
 
-<h2>B/ Configuration</h2>
+    <h2>B/ Configuration</h2>
+        <p>
+        All generic layers inside the network are in the same address space.
+        The AXI4L bus configuring those layers is connected to the PS7, so it belongs to its address space, from 0x4000_0000 to 0x7FFF_FFF for AXI GP0 interface. (The AXI interface is write-only). 
 
-<p>
-All generic layers inside the network are in the same address space.
-The AXI4L bus configuring those layers is connected to the PS7, so it belongs to its address space.
-(from 0x4000_0000 to 0x7FFF_FFF for AXI GP0 interface).
-The AXI interface is write-only. 
+        As a consequence, layers must know their address space in the HDL code, so they can separate their configuration from their neighbour configurations. 
 
-As a consequence, layers must know their address space in the HDL code, so they can separate their configuration from their neighbour configurations. 
+        Thus, we have one more generic parameters in the generic layers : g_MEM_BASE
+        </p>
 
-Thus, we have one more generic parameters in the generic layers : 
-g_MEM_BASE
-</p>
+    <h2>C/ Data I/O</h2>
+        <p>
+        The input and output datas are flowing through the network thanks to AXI streaming interfaces.
+        Those streaming interface deal with one input / output at the time, they are not streamed together.
+        </p>
 
-<h2>C/ Data</h2>
+            <h3>1) Streaming Input</h3>
+            <p>
+            </p>
 
-<p>
-Data is flowing through the network using AXI Stream interfaces
-</p>
+            <h3>2) Streaming Output</h3>
+            <p>
+            </p>
 
-<h1>V/ Developer's Guide</h1>
+<h1>V/ Vivado project</h1>
+    <h2>A/ Restrictions on the network</h2>
+        <p>
+        The PS7 has a number of restrictions constraining the IO width of the network:  
+        <ul>
+            <li>The configuration bus must be 64 bits</li>
+            <li>The streaming input must be 32 or 64 bits</li>
+            <li>The streaming output must be 32 or 64 bits</li>
+        </ul>
 
-<h2>Adding a new HDL IP</h2>
-<pre>
-- ips/Makefile          : add the IP in the "all" and "clean" rules
-- ip/Makefile           : change IP's name
-- ip/script/ip_packager : change IP's name
-- ip/src                : change hdl file's name
-- ip/tb                 : change test bench's name
-</pre>
+        We chose to have 32 bit streaming interfaces, as it is the maximum data width allowed for vhdl integers.
+        In the configuration bus, bits 63 downto 32 will never be used.
+        In the streaming buses, upper bits will not be used if we have data_width &lt; 32. 
+        </p>
 
-<h2>IP packaging</h2>
-<p>
-To package all the IP inside the framework
-</p>
-<code>
-$ make ips
-</code>
+<h1>VI/ Developer's Guide</h1>
 
-<h2>Vivado project</h2>
-<p>
-Project configuration, synthesis and implementation inside the vivado/ directory
-</p>
-<code>
-$ make vivado
-</code>
+    <h2>Adding a new HDL IP</h2>
+        <ul>
+        <li>ips/Makefile          : add the IP in the "all" and "clean" rules
+        <li>ip/Makefile           : change IP's name
+        <li>ip/script/ip_packager : change IP's name
+        <li>ip/src                : change hdl file's name
+        <li>ip/tb                 : change test bench's name
+        </ul>
 
-<h2>Vitis project</h2>
-<p>
-Project configuration inside the vitis/ directory
-</p>
-<code>
-$ make vitis
-</code>
+    <h2>IP packaging</h2>
+        <p>
+        To package all the IP inside the framework
+        </p>
+        <code>
+        $ make ips
+        </code>
+
+    <h2>Vivado project</h2>
+        <p>
+        Project configuration, synthesis and implementation inside the vivado/ directory
+        </p>
+        <code>
+        $ make vivado
+        </code>
+
+    <h2>Vitis project</h2>
+        <p>
+        Project configuration inside the vitis/ directory
+        </p>
+        <code>
+        $ make vitis
+        </code>
 
 </body>

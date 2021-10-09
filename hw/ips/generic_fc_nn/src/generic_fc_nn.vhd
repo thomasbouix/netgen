@@ -16,12 +16,12 @@ entity generic_fc_nn is
         ----------------------------------------------------
         ------- axi lite slave configuration interface -----
         ----------------------------------------------------
-        s_axi_awaddr        : in  std_logic_vector(31 downto 0);
+        s_axi_awaddr        : in  std_logic_vector(31 downto 0);        -- constrained by the PS7
         s_axi_awprot        : in  std_logic_vector(2 downto 0);
         s_axi_awvalid       : in  std_logic;
         s_axi_awready       : out std_logic;
-        s_axi_wdata         : in  std_logic_vector(p_DATA_WIDTH - 1 downto 0);
-        s_axi_wstrb         : in  std_logic_vector((p_DATA_WIDTH / 8) - 1 downto 0);
+        s_axi_wdata         : in  std_logic_vector(63 downto 0);        -- constrained by the PS7
+        s_axi_wstrb         : in  std_logic_vector(7 downto 0);         -- constrained by the PS7
         s_axi_wvalid        : in  std_logic;
         s_axi_wready        : out std_logic;
         s_axi_bresp         : out std_logic_vector(1 downto 0);     
@@ -33,7 +33,7 @@ entity generic_fc_nn is
         ----------------------------------------------------
         s_axis_tvalid       : in  std_logic;
         s_axis_tlast        : in  std_logic;
-        s_axis_tdata        : in  std_logic_vector(p_DATA_WIDTH * p_NETWORK_INPUTS - 1 downto 0);       -- all inputs are sent in one cycle
+        s_axis_tdata        : in  std_logic_vector(31 downto 0);        -- constrained by the PS7
         s_axis_tready       : out std_logic;
 
         ----------------------------------------------------
@@ -41,7 +41,7 @@ entity generic_fc_nn is
         ----------------------------------------------------
         m_axis_tvalid       : out std_logic;
         m_axis_tlast        : out std_logic;
-        m_axis_tdata        : out std_logic_vector(p_DATA_WIDTH * p_NETWORK_OUTPUTS - 1 downto 0);
+        m_axis_tdata        : out std_logic_vector(31 downto 0);        -- constrained by the PS7
         m_axis_tready       : in  std_logic 
 
     );
@@ -236,7 +236,7 @@ begin
                         if s_axi_awvalid = '1' and s_axi_wvalid = '1' then
 
                             cfg_addr                    <= s_axi_awaddr;
-                            cfg_data                    <= s_axi_wdata;
+                            cfg_data                    <= s_axi_wdata(p_DATA_WIDTH - 1 downto 0);
                             
                             s_axi_awready               <= '1';
                             s_axi_wready                <= '1';
@@ -264,6 +264,8 @@ begin
     -- receiving inputs through s_axis interface
     p_inputs_processing : process(clk) is
 
+        variable i : integer range 0 to p_NETWORK_INPUTS - 1 := 0;  -- input index
+
     begin
 
         if rising_edge(clk) then
@@ -272,12 +274,22 @@ begin
 
                 r_network_inputs        <= (others => '0');
                 s_axis_tready           <= '0';
+                i := 0;
 
             else 
 
                 if s_axis_tvalid = '1' then
-                    r_network_inputs    <= s_axis_tdata;
+
+                    r_network_inputs(p_DATA_WIDTH*(p_NETWORK_INPUTS-i)-1 downto p_DATA_WIDTH*(p_NETWORK_INPUTS-i-1))
+                                        <= s_axis_tdata(p_DATA_WIDTH - 1 downto 0);
                     s_axis_tready       <= '1';                    
+
+                    if s_axis_tlast = '1' then -- receiving the last input
+                        i := 0;
+                    else 
+                        i := i + 1;
+                    end if;
+
                 else
                     s_axis_tready       <= '0';
                 end if;
@@ -290,6 +302,8 @@ begin
     -- TO DO : IS THE SLAVE IS READY ?
     p_outputs_processing : process(clk) is
 
+        variable i : integer range 0 to p_NETWORK_OUTPUTS - 1 := 0; -- current output index
+
     begin
 
         if rising_edge(clk) then
@@ -299,16 +313,23 @@ begin
                 m_axis_tdata            <= (others => '0');
                 m_axis_tvalid           <= '0';
                 m_axis_tlast            <= '0';
+                i := 0;
 
             else 
 
+                m_axis_tdata(p_DATA_WIDTH-1 downto 0) 
+                                        <= r_network_outputs(p_DATA_WIDTH*(p_NETWORK_OUTPUTS-i)-1 downto p_DATA_WIDTH*(p_NETWORK_OUTPUTS-i-1));
                 m_axis_tvalid           <= '1';
-                m_axis_tlast            <= '0';
-                m_axis_tdata            <= r_network_outputs;
+
+                if i = p_NETWORK_OUTPUTS - 1 then -- sending the last output
+                    m_axis_tlast        <= '1';
+                    i := 0;
+                else                            
+                    i := i+1;
+                end if;
 
             end if;
         end if;
-
 
     end process;
 
