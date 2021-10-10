@@ -255,8 +255,8 @@ begin
 
             -------------------------------------------------------------------------------
 
-            report "[3] Settings L1.W01 = -1";
             report "--";
+            report "[3] Settings L1.W01 = -1";
 
             s_axi_awaddr            <= std_logic_vector(to_unsigned(16#4000_000D#, 32));
             s_axi_awvalid           <= '1';
@@ -316,8 +316,8 @@ begin
 
             -------------------------------------------------------------------------------
 
-            report "[4] Settings L4.B0  = -10";
             report "--";
+            report "[4] Settings L4.B0  = -10";
 
             s_axi_awaddr            <= std_logic_vector(to_unsigned(16#4000_003F#, 32));
             s_axi_awvalid           <= '1';
