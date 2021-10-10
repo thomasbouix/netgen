@@ -29,9 +29,9 @@
         Those parameters are : 
         <ul>
             <li>DATA_WIDTH : cannot be greated that 32, as the integer type is 32 bit wide in VHDL</li>
+            <li>NEURONS : array of integers representing the number of neurons for each layer</li>
             <li>NB_INPUTS</li> 
-            <li>NB_OUTPUTS</li> 
-            <li>NEURONS</li>
+            <li>NB_OUTPUTS : must be equal to the last element of the NEURONS parameter</li> 
         </ul>
         </p>
 
@@ -63,31 +63,27 @@
         <img src="images/generic_fc_nn.jpg">
 
         <p>
-        Even though the data width is customizable, network's I/O width are fixed in order to facilitate connexions with the PS7.  
+        Even though the data width is customizable, network's I/O width are fixed in order to facilitate connexions with the PS7. If the width of the bus is greater than the data width, upper bits of the bus will not be used. 
         </p>
 
     <h2>B/ Configuration</h2>
         <p>
-        All generic layers inside the network are in the same address space.
-        The AXI4L bus configuring those layers is connected to the PS7, so it belongs to its address space, from 0x4000_0000 to 0x7FFF_FFF for AXI GP0 interface. (The AXI interface is write-only). 
-
-        As a consequence, layers must know their address space in the HDL code, so they can separate their configuration from their neighbour configurations. 
-
-        Thus, we have one more generic parameters in the generic layers : g_MEM_BASE
+        All generic layers inside the network are in the same address space. The AXI4L bus configuring those layers is connected to the PS7, so it belongs to its address space, from 0x4000_0000 to 0x7FFF_FFF for AXI GP0 interface. (The AXI interface is write-only). As a consequence, layers must know their address space in the HDL code, so they can separate their configuration from their neighbour configurations. Thus, we have one more generic parameters in the generic layers : g_MEM_BASE
         </p>
 
     <h2>C/ Data I/O</h2>
         <p>
-        The input and output datas are flowing through the network thanks to AXI streaming interfaces.
-        Those streaming interface deal with one input / output at the time, they are not streamed together.
+        The input and output datas are flowing through the network thanks to AXI streaming interfaces. Those streaming interface deal with one input / output at the time, they are not streamed together. 
         </p>
 
             <h3>1) Streaming Input</h3>
             <p>
+                The user must set one input at the time, in the right order, and must put the tlast signal to '1' when the last input is configured. One this signal is raised, the IP sends all the input to the first layer inside the network.  
             </p>
 
             <h3>2) Streaming Output</h3>
             <p>
+                When an output is ready, the streaming output interface sends the outputs from the first to the last, and sets tlast to '1' when the last outputs is sent. This interface currently does not check if the slave is ready, as the IP cannot buffer incomming outputs. 
             </p>
 
 <h1>V/ Vivado project</h1>
@@ -100,9 +96,7 @@
             <li>The streaming output must be 32 or 64 bits</li>
         </ul>
 
-        We chose to have 32 bit streaming interfaces, as it is the maximum data width allowed for vhdl integers.
-        In the configuration bus, bits 63 downto 32 will never be used.
-        In the streaming buses, upper bits will not be used if we have data_width &lt; 32. 
+        We choose to have 32 bit streaming interfaces, as it is the maximum data width allowed for vhdl integers. In the configuration bus, bits 63 downto 32 will never be used (careful with signed integers in the software !). In the streaming buses, upper bits will not be used if we have data_width &lt; 32. 
         </p>
 
 <h1>VI/ Developer's Guide</h1>
