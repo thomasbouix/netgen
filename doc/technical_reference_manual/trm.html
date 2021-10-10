@@ -71,7 +71,19 @@
         All generic layers inside the network are in the same address space. The AXI4L bus configuring those layers is connected to the PS7, so it belongs to its address space, from 0x4000_0000 to 0x7FFF_FFF for AXI GP0 interface. (The AXI interface is write-only). As a consequence, layers must know their address space in the HDL code, so they can separate their configuration from their neighbour configurations. Thus, we have one more generic parameters in the generic layers : g_MEM_BASE
         </p>
 
-    <h2>C/ Data I/O</h2>
+    <h2>C/ Restrictions from PS7</h2>
+        <p>
+        The PS7 has a number of restrictions constraining the IO width of the network:  
+        <ul>
+            <li>The configuration bus must be 64 bits</li>
+            <li>The streaming input must be 32 or 64 bits</li>
+            <li>The streaming output must be 32 or 64 bits</li>
+        </ul>
+
+        We choose to have 32 bit streaming interfaces, as it is the maximum data width allowed for vhdl integers. In the configuration bus, bits 63 downto 32 will never be used (careful with signed integers in the software !). In the streaming buses, upper bits will not be used if we have data_width &lt; 32. 
+        </p>
+
+    <h2>D/ Data I/O</h2>
         <p>
         The input and output datas are flowing through the network thanks to AXI streaming interfaces. Those streaming interface deal with one input / output at the time, they are not streamed together. 
         </p>
@@ -86,17 +98,18 @@
                 When an output is ready, the streaming output interface sends the outputs from the first to the last, and sets tlast to '1' when the last outputs is sent. This interface currently does not check if the slave is ready, as the IP cannot buffer incomming outputs. 
             </p>
 
-<h1>V/ Vivado project</h1>
-    <h2>A/ Restrictions on the network</h2>
-        <p>
-        The PS7 has a number of restrictions constraining the IO width of the network:  
-        <ul>
-            <li>The configuration bus must be 64 bits</li>
-            <li>The streaming input must be 32 or 64 bits</li>
-            <li>The streaming output must be 32 or 64 bits</li>
-        </ul>
+<h1>V/ Hardware : Full system</h1>
 
-        We choose to have 32 bit streaming interfaces, as it is the maximum data width allowed for vhdl integers. In the configuration bus, bits 63 downto 32 will never be used (careful with signed integers in the software !). In the streaming buses, upper bits will not be used if we have data_width &lt; 32. 
+
+    <h2>A/ Overview</h2>
+
+    <h2>B/ PS7</h2>
+        <p>
+        <ul>
+            <li>GP0 : used for configuration of both network and DMA</li>
+            <li>HP0 : Network's data source</li>
+            <li>HP1 : Network's data destination</li>
+        </ul>
         </p>
 
 <h1>VI/ Developer's Guide</h1>
