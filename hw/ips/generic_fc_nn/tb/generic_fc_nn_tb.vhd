@@ -101,8 +101,8 @@ begin
 
             wait until rstn = '1';
             
-            report "[0] Settings inputs = (1, 0)";
             report "--";
+            report "[0] Settings inputs = (1, 0)";
 
             report "[0] Setting input(0)";
             wait until rising_edge(clk);
@@ -121,55 +121,79 @@ begin
             s_axis_tvalid               <= '0';
             s_axis_tlast                <= '0';
 
-            report "[1] Testing outputs";
+            report "[0] Testing outputs";
 
             wait until m_axis_tvalid = '1';
-            assert m_axis_tdata = X"0000_0060" report "[10] Output error";  
+            assert m_axis_tdata = X"0000_0060" report "[00] Output error";  
             wait until rising_edge(clk);
-            assert m_axis_tdata = X"0000_0060" report "[11] Output error";  
+            assert m_axis_tdata = X"0000_0060" report "[01] Output error";  
             wait until rising_edge(clk);
-            assert m_axis_tdata = X"0000_0060" report "[12] Output error";  
+            assert m_axis_tdata = X"0000_0060" report "[02] Output error";  
             wait until rising_edge(clk);
-            assert m_axis_tdata = X"0000_0060" report "[13] Output error";  
+            assert m_axis_tdata = X"0000_0060" report "[03] Output error";  
 
             -------------------------------------------------------------------------------
 
-            report "[1] Settings L0.W00 = 2";
             report "--";
+            report "[1] Settings L0.W00 = 2";
 
---          s_axi_awaddr            <= std_logic_vector(to_unsigned(16#4000_0000#, 32));
---          s_axi_awvalid           <= '1';
---          s_axi_wdata             <= "00000010";
---          s_axi_wvalid            <= '1';
+            s_axi_awaddr            <= std_logic_vector(to_unsigned(16#4000_0000#, 32));
+            s_axi_awvalid           <= '1';
+            s_axi_wdata(31 downto 0)<= X"0000_0002";
+            s_axi_wvalid            <= '1';
 
---          wait on s_axi_awready, s_axi_wready;
+            wait on s_axi_awready, s_axi_wready;
 
---          if s_axi_awready = '1' and s_axi_wready = '1' then 
---              s_axi_awvalid       <= '0';
---              s_axi_wvalid        <= '0';
---          elsif s_axi_awready = '1' then
---              s_axi_awvalid       <= '0';
---              wait on s_axi_wready;
---              s_axi_wvalid        <= '0';
---          elsif s_axi_wready = '1' then
---              s_axi_wvalid        <= '0';
---              wait on s_axi_awready;
---              s_axi_awvalid       <= '0';
---          end if;
+            if s_axi_awready = '1' and s_axi_wready = '1' then 
+                s_axi_awvalid       <= '0';
+                s_axi_wvalid        <= '0';
+            elsif s_axi_awready = '1' then
+                s_axi_awvalid       <= '0';
+                wait on s_axi_wready;
+                s_axi_wvalid        <= '0';
+            elsif s_axi_wready = '1' then
+                s_axi_wvalid        <= '0';
+                wait on s_axi_awready;
+                s_axi_awvalid       <= '0';
+            end if;
 
---          wait on s_axi_bvalid;
+            wait on s_axi_bvalid;
 
---          if s_axi_bvalid = '1' then 
---              s_axi_bready <= '1';
---              wait for 2 * CLOCK_PERIOD;
---              s_axi_bready <= '0';
---          end if;
+            if s_axi_bvalid = '1' then 
+                s_axi_bready <= '1';
+                wait for 2 * CLOCK_PERIOD;
+                s_axi_bready <= '0';
+            end if;
 
---          wait for 10*CLOCK_PERIOD;
---          report "[1] Testing outputs";
---          assert m_axis_tdata = X"7878_7878" report "[1] Output error";  
+            report "[1] Settings inputs = (1, 0)";
+            report "[1] Setting input(0)";
+            wait until rising_edge(clk);
+            s_axis_tdata                <= (0 => '1', others => '0');
+            s_axis_tvalid               <= '1';
+            s_axis_tlast                <= '0';
+            wait until s_axis_tready = '1';         -- slave is done with input(0)
 
---          -------------------------------------------------------------------------------
+            report "[1] Setting input(1)";
+            s_axis_tdata                <= (others => '0');
+            s_axis_tvalid               <= '1';
+            s_axis_tlast                <= '1';
+            wait until rising_edge(clk);
+            assert s_axis_tready = '1' report "[1] Slave did not see input(1)";
+
+            s_axis_tvalid               <= '0';
+            s_axis_tlast                <= '0';
+
+            report "[1] Testing outputs";
+            wait until m_axis_tvalid = '1';
+            assert m_axis_tdata = X"0000_0078" report "[20] Output error";  
+            wait until rising_edge(clk);
+            assert m_axis_tdata = X"0000_0078" report "[21] Output error";  
+            wait until rising_edge(clk);
+            assert m_axis_tdata = X"0000_0078" report "[22] Output error";  
+            wait until rising_edge(clk);
+            assert m_axis_tdata = X"0000_0078" report "[23] Output error";  
+
+            -------------------------------------------------------------------------------
 
 --          report "[2] Settings L0.B3  = -1";
 --          report "--";

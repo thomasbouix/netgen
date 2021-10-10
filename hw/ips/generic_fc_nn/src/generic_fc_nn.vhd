@@ -268,6 +268,7 @@ begin
     -- receiving inputs through s_axis interface
     -- the network is receiving 1 input / clock cycle
     -- if it has 3 inputs, it needs 3 clock cycles to get them all
+    -- once the 3 inputs are received, they are all copied to the firt layer input in the same time
     p_inputs_processing : process(clk) is
 
         variable i              : integer range 0 to p_NETWORK_INPUTS                           := 0;               -- input index
@@ -310,7 +311,8 @@ begin
     -- this process tracks the data flowing through the network from input to output
     -- when an input is fully written, a 1 is pushed into the shifting register (represented by and std_logic_vector)
     -- each bit of the register represents a layer in the network
-    -- when the 1 reaches the last bit, it means the data is at the end of the network, so we can display the output
+    -- when the 1 reaches the before last bit, it means the output of the before last layer is ready
+    -- when the 1 reaches the last bit, it means the data is at the end of the network (last layer's output), so we can display it
     p_data_tracker : process(clk) is 
 
     begin
@@ -320,6 +322,7 @@ begin
             if rstn = '0' then
     
                 r_tlast_old <= '0';
+                r_shift     <= (others => '0');
 
             else 
 
@@ -367,10 +370,8 @@ begin
 
                         m_axis_tlast            <= '0';
                             
-                        -- outputs are ready to be displayed
-                        if r_shift(0) = '1' then                
-                            -- writing the first output : output(0)
-                            m_axis_tdata(p_DATA_WIDTH-1 downto 0) <=
+                        if r_shift(0) = '1' then                                -- outputs are ready to be displayed
+                            m_axis_tdata(p_DATA_WIDTH-1 downto 0) <=            -- writing the first output : output(0)
                                 r_network_outputs(p_DATA_WIDTH*p_NETWORK_OUTPUTS-1 downto p_DATA_WIDTH*(p_NETWORK_OUTPUTS-1));
                             m_axis_tvalid       <= '1';
                             r_output_sm         <= WRITING_OUTPUT;
@@ -381,16 +382,15 @@ begin
 
                     when WRITING_OUTPUT =>
 
-                        m_axis_tvalid           <= '1';
-                        -- writing output(i) from 1 to p_NETWORK_OUTPUT - 1
-                        m_axis_tdata(p_DATA_WIDTH-1 downto 0) <=
+                        m_axis_tdata(p_DATA_WIDTH-1 downto 0) <=                -- writing output(i) from 1 to p_NETWORK_OUTPUT - 1
                             r_network_outputs(p_DATA_WIDTH*(p_NETWORK_OUTPUTS-i)-1 downto p_DATA_WIDTH*(p_NETWORK_OUTPUTS-i-1));
+                        m_axis_tvalid           <= '1';                         
 
-                        if i = p_NETWORK_OUTPUTS - 1 then   -- writing the last output
+                        if i = p_NETWORK_OUTPUTS - 1 then                       -- writing the last output
                             m_axis_tlast        <= '1';
                             r_output_sm         <= WAITING_FOR_OUTPUT;
                             i := 0;
-                        else                                -- writing a middle output
+                        else                                                    -- writing a middle output
                             m_axis_tlast        <= '0';
                             r_output_sm         <= WRITING_OUTPUT;
                             i := i+1;
