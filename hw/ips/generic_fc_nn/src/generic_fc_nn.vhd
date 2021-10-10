@@ -389,7 +389,7 @@ begin
                         if i = p_NETWORK_OUTPUTS - 1 then                       -- writing the last output
                             m_axis_tlast        <= '1';
                             r_output_sm         <= WAITING_FOR_OUTPUT;
-                            i := 0;
+                            i := 1;
                         else                                                    -- writing a middle output
                             m_axis_tlast        <= '0';
                             r_output_sm         <= WRITING_OUTPUT;
