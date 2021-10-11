@@ -377,27 +377,46 @@ begin
             assert m_axis_tdata = X"0000_0050" report "[43] Output error";  
 
             report "----------------------------------------------------";
-            report "[5] Sending continous inputs";
-
+            report "[5] Sending continous inputs = (0, 1)";
+            report "---";
+            report "[5] Sending inputs";
             wait until rising_edge(clk);
             s_axis_tdata            <= (others => '0');
             s_axis_tvalid           <= '1';
             s_axis_tlast            <= '0';
-
+            wait until rising_edge(clk);
             wait until s_axis_tready = '1';
             s_axis_tdata            <= (0 => '1', others => '0');
             s_axis_tvalid           <= '1';
             s_axis_tlast            <= '1';
+            report "---";
 
+            report "[5] Sending inputs";
             wait until rising_edge(clk);
+            wait until s_axis_tready = '1';
             s_axis_tdata            <= (others => '0');
             s_axis_tvalid           <= '1';
             s_axis_tlast            <= '0';
-
             wait until rising_edge(clk);
+            wait until s_axis_tready = '1';
             s_axis_tdata            <= (0 => '1', others => '0');
             s_axis_tvalid           <= '1';
             s_axis_tlast            <= '1';
+            report "---";
+
+            report "[5] Sending inputs";
+            wait until rising_edge(clk);
+            wait until s_axis_tready = '1';
+            s_axis_tdata            <= (others => '0');
+            s_axis_tvalid           <= '1';
+            s_axis_tlast            <= '0';
+            wait until rising_edge(clk);
+            wait until s_axis_tready = '1';
+            s_axis_tdata            <= (0 => '1', others => '0');
+            s_axis_tvalid           <= '1';
+            s_axis_tlast            <= '1';
+            report "---";
+
                
             wait until rising_edge(clk);
             s_axis_tvalid               <= '0';
