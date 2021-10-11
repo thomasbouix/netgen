@@ -101,7 +101,7 @@ begin
 
             wait until rstn = '1';
             
-            report "--";
+            report "----------------------------------------------------";
             report "[0] Settings inputs = (1, 0)";
 
             report "[0] Setting input(0)";
@@ -133,7 +133,7 @@ begin
 
             -------------------------------------------------------------------------------
 
-            report "--";
+            report "----------------------------------------------------";
             report "[1] Settings L0.W00 = 2";
 
             s_axi_awaddr            <= std_logic_vector(to_unsigned(16#4000_0000#, 32));
@@ -194,7 +194,7 @@ begin
 
             -------------------------------------------------------------------------------
 
-            report "--";
+            report "----------------------------------------------------";
             report "[2] Settings L0.B3  = -1";
 
             s_axi_awaddr            <= std_logic_vector(to_unsigned(16#4000_000B#, 32));
@@ -255,7 +255,7 @@ begin
 
             -------------------------------------------------------------------------------
 
-            report "--";
+            report "----------------------------------------------------";
             report "[3] Settings L1.W01 = -1";
 
             s_axi_awaddr            <= std_logic_vector(to_unsigned(16#4000_000D#, 32));
@@ -316,7 +316,7 @@ begin
 
             -------------------------------------------------------------------------------
 
-            report "--";
+            report "----------------------------------------------------";
             report "[4] Settings L4.B0  = -10";
 
             s_axi_awaddr            <= std_logic_vector(to_unsigned(16#4000_003F#, 32));
@@ -376,7 +376,33 @@ begin
             wait until rising_edge(clk);
             assert m_axis_tdata = X"0000_0050" report "[43] Output error";  
 
-            report "--";
+            report "----------------------------------------------------";
+            report "[5] Sending continous inputs";
+
+            wait until rising_edge(clk);
+            s_axis_tdata            <= (others => '0');
+            s_axis_tvalid           <= '1';
+            s_axis_tlast            <= '0';
+
+            wait until s_axis_tready = '1';
+            s_axis_tdata            <= (0 => '1', others => '0');
+            s_axis_tvalid           <= '1';
+            s_axis_tlast            <= '1';
+
+            wait until rising_edge(clk);
+            s_axis_tdata            <= (others => '0');
+            s_axis_tvalid           <= '1';
+            s_axis_tlast            <= '0';
+
+            wait until rising_edge(clk);
+            s_axis_tdata            <= (0 => '1', others => '0');
+            s_axis_tvalid           <= '1';
+            s_axis_tlast            <= '1';
+               
+            wait until rising_edge(clk);
+            s_axis_tvalid               <= '0';
+            s_axis_tlast                <= '0';
+
             wait;
 
         end process;
