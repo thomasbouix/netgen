@@ -90,7 +90,7 @@
 
             <h3>1) Streaming Input</h3>
             <p>
-                The user must set one input at the time, in the right order, and must put the tlast signal to '1' when the last input is configured. One this signal is raised, the IP sends all the input to the first layer inside the network.  
+                The user must set one input at the time, in the right order, and must put the tlast signal to '1' when the last input is configured. One this signal is raised, the IP checks if the network is ready to process new inputs, and if it is the case, the tready is signal is raised to 1 for the last input. 
             </p>
 
             <h3>2) Streaming Output</h3>
