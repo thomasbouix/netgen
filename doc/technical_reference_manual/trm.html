@@ -55,6 +55,9 @@
         <p>
         Each “data” (weight or bias) has its onw address inside the IP (the address is independent of the data_width). They are configured through a minimalist protocol with only an addr and a data signal. The data bus is p_DATA_WIDTH large, so the configuration bus configures one weight / bias at the time. As all layers are in the same address space (also shared with the PS7), they need to have an offset so they can distinguish incoming addresses. Weights come first in the address space, followed by bias.
         </p>
+        <p>
+        The configuration process takes two clock cycle in order to prevent too long logic paths. 
+        </p>
 
 <h1>IV/ Generic Fully-Connected Neural Network</h1>
 
