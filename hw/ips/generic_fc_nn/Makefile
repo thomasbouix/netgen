@@ -1,7 +1,7 @@
 # GHDL-GCC + VIVADO MAKEFILE
 
 IP_NAME=generic_fc_nn
-STOP_TIME=1000ns
+STOP_TIME=1500ns
 
 # Elaboration of the simulation executable
 ghdl : 

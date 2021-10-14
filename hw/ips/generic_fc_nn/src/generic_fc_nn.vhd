@@ -110,11 +110,13 @@ architecture rtl of generic_fc_nn is
     end function;
     
     type T_CFG_SM                 is (PROCESSING_DATA, WRITING_RESP);                                   -- axi state machine type
+    type T_INPUT_SM               is (WRITING_INPUTS, WAITING_FOR_NETWORK, WAITING_FOR_TLAST);          -- axi state machine type
     type T_OUTPUT_SM              is (WAITING_FOR_OUTPUT, WRITING_OUTPUT);                              -- axi state machine type
 
     constant c_NB_CONNEXIONS    : integer                                                               := f_nb_connexions      ;
 
     signal r_cfg_sm             : T_CFG_SM                                                              := PROCESSING_DATA      ;
+    signal r_input_sm           : T_INPUT_SM                                                            := WRITING_INPUTS       ;
     signal r_output_sm          : T_OUTPUT_SM                                                           := WAITING_FOR_OUTPUT   ;
     signal r_network_inputs     : std_logic_vector(p_NETWORK_INPUTS  * p_DATA_WIDTH - 1 downto 0)       := (others => '0')      ;
     signal r_network_outputs    : std_logic_vector(p_NETWORK_OUTPUTS * p_DATA_WIDTH - 1 downto 0)       := (others => '0')      ;
@@ -122,7 +124,6 @@ architecture rtl of generic_fc_nn is
     signal cfg_addr             : std_logic_vector(31 downto 0)                                         := (others => '0')      ;
     signal cfg_data             : std_logic_vector(p_DATA_WIDTH - 1 downto 0)                           := (others => '0')      ;
     signal r_shift              : std_logic_vector(p_NETWORK_NEURONS'length downto 0)                   := (others => '0')      ;
-    signal r_tlast_old          : std_logic                                                             := '0'                  ;
 
     -- generic_layer class header
     component generic_layer
@@ -214,8 +215,9 @@ begin
 
     end generate layers;
 
-    -- process transfering axi signals to shared configuration bus
-    -- the axi lite configuration interface is write only : there are no read channels
+    -- process transfering axi signals to shared configuration bus (write-only interface)
+    -- the addr and the datas must be sent at the same time
+    -- configuration will wait if an input is being processed by the network
     p_configuration : process(clk) is
 
     begin
@@ -236,28 +238,34 @@ begin
                 case r_cfg_sm is 
 
                     when PROCESSING_DATA =>
+            
+                        if s_axi_awvalid = '1' and s_axi_wvalid = '1' then                      -- a new configuration is being sent
 
-                        if s_axi_awvalid = '1' and s_axi_wvalid = '1' then
-
-                            cfg_addr                    <= s_axi_awaddr;
-                            cfg_data                    <= s_axi_wdata(p_DATA_WIDTH - 1 downto 0);
-                            
-                            s_axi_awready               <= '1';
-                            s_axi_wready                <= '1';
-                            r_cfg_sm                    <= WRITING_RESP;
+                            if to_integer(unsigned(r_shift)) = 0 then                           -- no ongoing computation, network parameters can be updated 
+                                cfg_addr        <= s_axi_awaddr;
+                                cfg_data        <= s_axi_wdata(p_DATA_WIDTH - 1 downto 0);
+                                
+                                s_axi_awready   <= '1';
+                                s_axi_wready    <= '1';
+                                r_cfg_sm        <= WRITING_RESP;
+                            else
+                                s_axi_awready   <= '0';
+                                s_axi_wready    <= '0';
+                                r_cfg_sm        <= PROCESSING_DATA;
+                            end if;
 
                         end if;
 
                     when WRITING_RESP =>
 
-                        s_axi_awready                   <= '0';
-                        s_axi_wready                    <= '0';
-                        s_axi_bvalid                    <= '1';
-                        s_axi_bresp                     <= "00";
+                        s_axi_awready           <= '0';
+                        s_axi_wready            <= '0';
+                        s_axi_bvalid            <= '1';
+                        s_axi_bresp             <= "00";
 
                         if s_axi_bready = '1' then
-                            s_axi_bvalid                <= '0';
-                            r_cfg_sm                    <= PROCESSING_DATA;
+                            s_axi_bvalid        <= '0';
+                            r_cfg_sm            <= PROCESSING_DATA;
                         end if;
 
                 end case;
@@ -268,79 +276,104 @@ begin
     -- receiving inputs through s_axis interface
     -- the network is receiving 1 input / clock cycle
     -- if it has 3 inputs, it needs 3 clock cycles to get them all
-    -- once the 3 inputs are received, they are all copied to the firt layer input in the same time
-    p_inputs_processing : process(clk) is
-
-        variable i              : integer range 0 to p_NETWORK_INPUTS                           := 0;               -- input index
-        variable v_input_buffer : std_logic_vector(p_NETWORK_INPUTS*p_DATA_WIDTH-1 downto 0)    := (others => '0'); -- input construction
-
-    begin
-
-        if rising_edge(clk) then
-
-            if rstn = '0' then
-
-                v_input_buffer          := (others => '0');     -- input construction
-                r_network_inputs        <= (others => '0');     -- real network inputs
-                s_axis_tready           <= '0';
-                i                       :=  0 ;
-
-            else 
-
-                if s_axis_tvalid = '1' then
-
-                    v_input_buffer(p_DATA_WIDTH*(p_NETWORK_INPUTS-i)-1 downto p_DATA_WIDTH*(p_NETWORK_INPUTS-i-1))  
-                                            := s_axis_tdata(p_DATA_WIDTH - 1 downto 0);
-                    s_axis_tready           <= '1';                    
-
-                    if s_axis_tlast = '1' then                  -- receiving the last input
-                        r_network_inputs    <= v_input_buffer;  -- copying input construction buffer to real first layer input
-                        i                   :=  0 ;
-                    else 
-                        i                   := i+1;             -- still receiving inputs : still building input buffer
-                    end if;
-
-                else
-                    s_axis_tready <= '0';
-                end if;
-
-            end if;
-        end if;
-    end process;
-
-    -- this process tracks the data flowing through the network from input to output
+    -- once the 3 inputs are received, they are all copied to the firt layer input in the same time, if the network is ready to process them
+    -- if the network is still processing datas, inputs will still be copied into input buffer, but will not be send to the first layer
+    --
+    -- this process also tracks the data flowing through the network from input to output
     -- when an input is fully written, a 1 is pushed into the shifting register (represented by and std_logic_vector)
     -- each bit of the register represents a layer in the network
     -- when the 1 reaches the before last bit, it means the output of the before last layer is ready
     -- when the 1 reaches the last bit, it means the data is at the end of the network (last layer's output), so we can display it
-    p_data_tracker : process(clk) is 
+    p_inputs_processing : process(clk) is
+
+        variable v_input_buffer         : std_logic_vector(p_NETWORK_INPUTS*p_DATA_WIDTH-1 downto 0) := (others => '0');    -- input construction
+        variable v_starting_computation : std_logic                                                  := '0';                -- = '1' when the inputs are send to layer[0]
+        variable i                      : integer range 0 to p_NETWORK_INPUTS                        :=  0 ;                -- input index
 
     begin
 
         if rising_edge(clk) then
 
             if rstn = '0' then
-    
-                r_tlast_old <= '0';
-                r_shift     <= (others => '0');
+
+                r_network_inputs        <= (others => '0');                                                                 -- real network inputs
+                r_shift                 <= (others => '0');
+                s_axis_tready           <= '0';
+
+                v_input_buffer          := (others => '0');                                                                 -- input construction buffer
+                v_starting_computation  := '0';
+                i                       :=  0 ;
 
             else 
 
-                r_tlast_old <= s_axis_tlast;
+                case r_input_sm is 
 
-                if r_tlast_old = '0' and s_axis_tlast = '1' then        -- new input detected, adding a 1 to shifting register
-                    r_shift(r_shift'left) <= '1';
-                else                                                    -- no new input
-                    r_shift(r_shift'left) <= '0';
+                    when WRITING_INPUTS =>
+
+                        if s_axis_tvalid = '1' then
+
+                            if s_axis_tlast = '0' then
+                                -- report "writing middle(i) : " & integer'image(i);
+                                v_input_buffer(p_DATA_WIDTH*(p_NETWORK_INPUTS-i)-1 downto p_DATA_WIDTH*(p_NETWORK_INPUTS-i-1))      -- writing first and middle inputs 
+                                := s_axis_tdata(p_DATA_WIDTH - 1 downto 0);
+                                s_axis_tready               <= '1';                    
+                                i                           := i+1;                                                             
+                                r_input_sm                  <= WRITING_INPUTS;
+
+                            elsif s_axis_tlast = '1' then
+                                -- report "writing last(i) : " & integer'image(i);
+                                v_input_buffer(p_DATA_WIDTH*(p_NETWORK_INPUTS-i)-1 downto p_DATA_WIDTH*(p_NETWORK_INPUTS-i-1))      -- writing last input
+                                := s_axis_tdata(p_DATA_WIDTH - 1 downto 0);
+                                s_axis_tready               <= '0';                                                                 -- we will be ready when sending inputs to layer[0]
+                                i                           := 0;
+                                r_input_sm                  <= WAITING_FOR_NETWORK;
+
+                            end if;
+
+                        else
+                            s_axis_tready                   <= '0';
+                        end if;
+
+                    when WAITING_FOR_NETWORK =>
+
+                        if to_integer(unsigned(r_shift)) = 0 then               -- network is not processing and data : ready for new input
+                            -- report "sending new input to layer[0]";
+                            r_network_inputs        <= v_input_buffer;          -- copying input construction buffer to first layer input
+                            s_axis_tready           <= '1';                     -- we are finaly ready to receive new inputs
+                            v_starting_computation  := '1';                     -- we can send a '1' to r_shift
+                            r_input_sm              <= WAITING_FOR_TLAST;
+                        else
+                            -- report "network is not ready to receive inputs";
+                            s_axis_tready           <= '0';                     -- the network is not ready yet, standy while tlast = '1'
+                            r_input_sm              <= WAITING_FOR_NETWORK;
+                        end if;
+
+                    when WAITING_FOR_TLAST =>                                   -- once the input sent, we need to wait for tlast to go back to '0'
+                        s_axis_tready               <= '0';
+                        if s_axis_tlast = '0' then
+                            r_input_sm              <= WRITING_INPUTS;
+                        else
+                            r_input_sm              <= WAITING_FOR_TLAST;
+                        end if;
+
+                end case;
+
+
+                ---------------- R_SHIFT ---------------- 
+                if v_starting_computation = '1' then                                                                        -- inputs were sent to the first layer
+                    r_shift(r_shift'left)   <= '1';                                                                 
+                    v_starting_computation  := '0';
+                else                                                                                                        
+                    r_shift(r_shift'left)   <= '0';                                                                
                 end if;
-
-                for i in r_shift'left-1 downto 0 loop
-                    r_shift(i) <= r_shift(i+1);
+                ----------------------------------------- 
+                for j in r_shift'left-1 downto 0 loop                                                                       -- shifting the register
+                    r_shift(j) <= r_shift(j+1);
                 end loop;
-            
-            end if;
-        end if;
+                ----------------------------------------- 
 
+            end if; --rstn
+        end if; -- clk
     end process;
 
 

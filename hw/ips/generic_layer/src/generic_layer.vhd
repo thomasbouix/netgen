@@ -41,6 +41,9 @@ end entity;
 
 architecture rtl of generic_layer is
 
+    type T_CFG_SM       is (ADDR_LOOKUP, WEIGHT_UPDATE, BIAS_UPDATE);
+
+    signal r_cfg_sm     : T_CFG_SM                                                  := ADDR_LOOKUP;
     signal r_weights    : t_weights(0 to g_NB_OUTPUTS - 1, 0 to g_NB_INPUTS - 1)    := (others => (others => 1));   -- weights[i][j] = 1
     signal r_bias       : t_bias   (0 to g_NB_OUTPUTS - 1)                          := (others => 0);               -- bias[i] = 0
 
@@ -72,13 +75,12 @@ begin
     end process;
 
     -- the configuration interface is write only : there are no read channels
+    -- it is done in two clock cycle to prevent timing errors
     p_configuration : process(clk) is
 
-        variable v_weight_addr  : std_logic                             := '0';     -- configuring a weight
-        variable v_bias_addr    : std_logic                             := '0';     -- configuring a bias
-        variable v_write_addr   : integer                               :=  0 ;     -- configuration addr as an integer
-        variable v_weight_i     : integer range 0 to g_NB_OUTPUTS - 1   :=  0 ;     -- index of weight row 
-        variable v_weight_j     : integer range 0 to g_NB_INPUTS  - 1   :=  0 ;     -- index of weight column 
+        variable v_write_addr   : integer                               := 0;   -- cfg addr as an integer
+        variable v_weight_i     : integer range 0 to g_NB_OUTPUTS - 1   := 0;   -- index of weight row 
+        variable v_weight_j     : integer range 0 to g_NB_INPUTS  - 1   := 0;   -- index of weight column 
 
     begin
 
@@ -86,45 +88,50 @@ begin
 
             if rstn = '0' then
 
-                v_write_addr        :=  0 ;
-                v_weight_addr       := '0';
-                v_bias_addr         := '0';
+                v_write_addr        := 0;
+                v_weight_i          := 0;
+                v_weight_j          := 0;
 
-                v_weight_i          :=  0;
-                v_weight_j          :=  0;
+                r_weights           <= (others => (others => 1));
+                r_bias              <= (others => 0);           
 
-                r_weights           <= ( others => (others => 1));
-                r_bias              <= ( others => 0);           
+                r_cfg_sm            <= ADDR_LOOKUP;
 
             else 
 
-                v_write_addr        := to_integer(unsigned(cfg_addr));
+               case r_cfg_sm is
 
+                   when ADDR_LOOKUP => 
 
-                if v_write_addr >= c_WEIGHTS_MEM_BASE and v_write_addr <= c_WEIGHTS_MEM_END then        -- configuring a weight
-                    v_weight_addr   := '1';
+                        v_write_addr        := to_integer(unsigned(cfg_addr));
 
-                elsif v_write_addr >= c_BIAS_MEM_BASE and v_write_addr <= c_BIAS_MEM_END then           -- configuring a bias
-                    v_bias_addr     := '1';
+                        if v_write_addr >= c_WEIGHTS_MEM_BASE and v_write_addr <= c_WEIGHTS_MEM_END then        -- configuring a weight
+                            r_cfg_sm            <= WEIGHT_UPDATE;
 
-                end if;
+                        elsif v_write_addr >= c_BIAS_MEM_BASE and v_write_addr <= c_BIAS_MEM_END then           -- configuring a bias
+                            r_cfg_sm            <= BIAS_UPDATE;
 
-                if v_weight_addr = '1' then
-                    v_weight_i                              := (to_integer(signed(cfg_addr)) - g_MEM_BASE) /   g_NB_INPUTS; 
-                    v_weight_j                              := (to_integer(signed(cfg_addr)) - g_MEM_BASE) mod g_NB_INPUTS; 
-                    r_weights(v_weight_i, v_weight_j)       <=  to_integer(signed(cfg_data)); 
+                        else                                                                                    -- addr is not in layer range
+                            r_cfg_sm            <= ADDR_LOOKUP;
 
-                elsif v_bias_addr = '1' then
-                    r_bias(v_write_addr - c_BIAS_MEM_BASE)  <=  to_integer(signed(cfg_data)); 
-                end if;
+                        end if;
 
-                v_weight_addr       := '0';
-                v_bias_addr         := '0';
+                    when WEIGHT_UPDATE =>
+                        v_weight_i                              := (to_integer(signed(cfg_addr)) - g_MEM_BASE) /   g_NB_INPUTS; 
+                        v_weight_j                              := (to_integer(signed(cfg_addr)) - g_MEM_BASE) mod g_NB_INPUTS; 
+                        r_weights(v_weight_i, v_weight_j)       <=  to_integer(signed(cfg_data)); 
+                        r_cfg_sm                                <= ADDR_LOOKUP;
+
+                    when BIAS_UPDATE =>
+                        r_bias(v_write_addr - c_BIAS_MEM_BASE)  <=  to_integer(signed(cfg_data)); 
+                        r_cfg_sm                                <= ADDR_LOOKUP;
+
+                    when others =>
+                        r_cfg_sm            <= ADDR_LOOKUP;
+                end case;
 
             end if;
-
         end if;
-
     end process; 
 
 
