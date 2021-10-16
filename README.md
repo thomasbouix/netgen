@@ -5,5 +5,5 @@ Development of a framework allowing a quick implementation of a customizable neu
 See doc/ for details. 
 
 ## Open-Source
-This project is open-source, any participation is welcomed !
+This project is open-source, any contribution is welcomed !
 
